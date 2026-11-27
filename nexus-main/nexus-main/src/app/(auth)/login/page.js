@@ -55,7 +55,7 @@ export default function LoginPage() {
       setSession(res);
       toast.success(`Welcome, ${res.user.fullName}`);
       const next = new URLSearchParams(window.location.search).get("next");
-      router.replace(["/internship", "/account", "/softskill", "/programmes"].some((p) => next?.startsWith(p)) ? next : homeFor(canFrom(res.user.permissions)));
+      router.replace(["/dashboard", "/internship", "/account", "/softskill", "/programmes"].some((p) => next?.startsWith(p)) ? next : homeFor(canFrom(res.user.permissions)));
     } catch (err) {
       setError(err.message);
     } finally {

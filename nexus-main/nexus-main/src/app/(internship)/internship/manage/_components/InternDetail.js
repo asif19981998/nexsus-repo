@@ -310,7 +310,7 @@ export function InternDetail({ id }) {
       ) : null}
 
       <Tabs value={tab} onChange={setTab}>
-        <TabList>
+        <TabList variant="line">
           <Tab value="allowance">
             <TabLabel count={(can(P.evaluationSubmit) ? toEvaluate : 0) + (can(P.billPay) ? toPay : 0)}>Monthly allowance</TabLabel>
           </Tab>
