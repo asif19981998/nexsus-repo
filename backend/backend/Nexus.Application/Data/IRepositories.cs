@@ -43,6 +43,9 @@ public interface IInternshipApplicationRepository : IRepository<InternshipApplic
 public interface ISetupRepository
 {
     Task<InternshipPolicy> GetPolicyAsync();
+
+    /// <summary>The policy row, tracked for an update; added (unsaved) when the table is still empty.</summary>
+    Task<InternshipPolicy> GetPolicyForUpdateAsync();
     Task<List<Department>> GetDepartmentsAsync(bool activeOnly);
     Task<List<EvaluationCriterion>> GetCriteriaAsync();
     Task<List<GradeBand>> GetGradeBandsAsync();

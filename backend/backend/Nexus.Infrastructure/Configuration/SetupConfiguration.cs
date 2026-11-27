@@ -54,6 +54,7 @@ public class InternshipPolicyConfiguration : IEntityTypeConfiguration<Internship
         b.ToTable("InternshipPolicy");
         b.Property(p => p.MonthlyAllowance).HasPrecision(18, 2);
         b.Property(p => p.ShiftName).HasMaxLength(60);
+        b.Property(p => p.WeekendDays).HasMaxLength(80).IsRequired().HasDefaultValue("Friday,Saturday");
     }
 }
 

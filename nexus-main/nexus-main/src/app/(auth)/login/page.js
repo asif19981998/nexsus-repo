@@ -16,7 +16,8 @@ import { cn } from "@/lib/cn";
 const DEMO_ACCOUNTS = [
   { email: "admin@nexus.demo", role: "Admin", name: "Farhana Akter", icon: Scale },
   { email: "mentor@nexus.demo", role: "Mentor", name: "Dr. Mahfuza Khatun", icon: UserCheck },
-  { email: "student@nexus.demo", role: "Student", name: "Ayesha Rahman", icon: GraduationCap },
+  // An active intern, so the student demo also shows attendance.
+  { email: "hasib.mahmud@nexus.demo", role: "Student", name: "Hasib Mahmud", icon: GraduationCap },
 ];
 const DEMO_PASSWORD = "demo123";
 

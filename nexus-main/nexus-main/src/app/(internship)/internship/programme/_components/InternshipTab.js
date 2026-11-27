@@ -11,6 +11,7 @@ import { api } from "@/lib/api";
 import { LEAVE_TONE, P } from "@/lib/internshipPermissions";
 import { formatCurrency, formatDate } from "@/lib/formatters";
 import { MonthlyTab } from "../../attendance/_components/MonthlyTab";
+import { duration } from "../../attendance/_components/DailyTab";
 
 function Card({ title, aside, children }) {
   return (
@@ -37,7 +38,7 @@ function Fact({ label, children }) {
 
 /** "(12 min late)" after a sign-in time. Lateness is shown only; it is not deducted. */
 function LateNote({ minutes }) {
-  return minutes > 0 ? <span className="ml-1 text-danger">({minutes} min late)</span> : null;
+  return minutes > 0 ? <span className="ml-1 text-danger">({duration(minutes)} late)</span> : null;
 }
 
 /** Tab label with a count bubble when something waits there. */

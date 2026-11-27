@@ -122,7 +122,7 @@ public sealed class InternService(
         var it = app.Internship!;
         if (app.Status != ApplicationStatus.Active) throw new BadRequestException("No active internship.");
         if (r.Date is not { } date) throw new BadRequestException("Choose a date.");
-        if (!InternshipRules.IsWorkingDay(date, (await setup.GetSnapshotAsync()).Holidays)) throw new BadRequestException("That date is a weekend or a holiday.");
+        if (!InternshipRules.IsWorkingDay(date, (await setup.GetSnapshotAsync()).Calendar)) throw new BadRequestException("That date is a weekend or a holiday.");
         if (date < it.StartDate || date > it.EndDate) throw new BadRequestException("The date is outside the internship period.");
         if (date > clock.Today) throw new BadRequestException("An absence can be marked only for today or an earlier day.");
         var reason = r.Reason?.Trim() ?? "";
@@ -164,7 +164,7 @@ public sealed class InternService(
         var it = app.Internship!;
         if (app.Status != ApplicationStatus.Active) throw new BadRequestException("No active internship.");
         if (r.Date is not { } date) throw new BadRequestException("Choose a date.");
-        if (!InternshipRules.IsWorkingDay(date, (await setup.GetSnapshotAsync()).Holidays)) throw new BadRequestException("That date is a weekend or a holiday.");
+        if (!InternshipRules.IsWorkingDay(date, (await setup.GetSnapshotAsync()).Calendar)) throw new BadRequestException("That date is a weekend or a holiday.");
         if (date < it.StartDate || date > it.EndDate) throw new BadRequestException("The date is outside the internship period.");
         if (date > clock.Today) throw new BadRequestException("Times can be set only for today or an earlier day.");
         if (!TimeOnly.TryParse(r.CheckIn, out var checkIn)) throw new BadRequestException("Enter the sign-in time as HH:mm.");

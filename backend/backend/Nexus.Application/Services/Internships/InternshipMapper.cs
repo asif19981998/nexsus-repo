@@ -40,7 +40,7 @@ public static class InternshipMapper
     public static InternshipDto Internship(Domain.Entities.Internships.Internship it, PolicySnapshot p, DateOnly today)
     {
         var byDate = it.Attendance.ToDictionary(r => r.Date);
-        var recent = InternshipRules.ClosedDays(it, today, p.Holidays).AsEnumerable().Reverse().Take(10)
+        var recent = InternshipRules.ClosedDays(it, today, p.Calendar).AsEnumerable().Reverse().Take(10)
             .Select(d =>
             {
                 var s = InternshipRules.DayStatus(byDate.GetValueOrDefault(d), d, today);
@@ -49,7 +49,7 @@ public static class InternshipMapper
             }).ToList();
 
         var todayRec = byDate.GetValueOrDefault(today);
-        var inPeriod = today >= it.StartDate && today <= it.EndDate && InternshipRules.IsWorkingDay(today, p.Holidays);
+        var inPeriod = today >= it.StartDate && today <= it.EndDate && InternshipRules.IsWorkingDay(today, p.Calendar);
         var deadline = InternshipRules.ReportDeadline(it, p);
         var outcome = InternshipRules.ComputeOutcome(it, today, p);
         var keyById = p.Criteria.ToDictionary(c => c.Id, c => c.Key);

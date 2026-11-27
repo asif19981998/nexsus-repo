@@ -105,7 +105,7 @@ public static class SoftSkillMapper
                 return new TraineeSessionDto(Session(x), r is null ? null : AttendanceLabel(r.Status), Time(r?.CheckIn), Time(r?.CheckOut),
                     r?.ReasonType?.ToString(), r?.Reason, r?.Note);
             }).ToList();
-        var deadline = SoftSkillRules.ReportDeadline(c.Batch.EndDate, s.Policy.ReportWorkingDays, s.Holidays);
+        var deadline = SoftSkillRules.ReportDeadline(c.Batch.EndDate, s.Policy.ReportWorkingDays, s.Calendar);
         var cert = t.CertificateNumber is null ? null
             : new SoftSkillCertificateDto(t.CertificateNumber, t.CertificateGrade!, t.AverageScore, t.CertificateIssuedAt!.Value);
         return new TraineeDto(

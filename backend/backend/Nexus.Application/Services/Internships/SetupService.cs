@@ -41,7 +41,7 @@ public sealed class SetupService(IUnitOfWork uow, IClock clock) : ISetupService
         var policy = await uow.Setup.GetPolicyAsync();
         var criteria = await uow.Setup.GetCriteriaAsync();
         var bands = await uow.Setup.GetGradeBandsAsync();
-        var holidays = (await uow.Holidays.GetAllAsync()).Select(h => h.Date).ToHashSet();
-        return new PolicySnapshot(policy, criteria, bands, holidays);
+        var calendar = WorkCalendar.From(policy, (await uow.Holidays.GetAllAsync()).Select(h => h.Date));
+        return new PolicySnapshot(policy, criteria, bands, calendar);
     }
 }

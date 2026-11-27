@@ -7,28 +7,20 @@ import { useApiQuery } from "@/hooks/useApi";
 import { DAY_TONE } from "@/lib/internshipPermissions";
 import { formatDate } from "@/lib/formatters";
 import { cn } from "@/lib/cn";
-import { AbsentModal, ManualTag, Photo, TimesModal, minutes, useAttendanceRights } from "./DailyTab";
+import { AbsentModal, ManualTag, Photo, TimesModal, duration, minutes, useAttendanceRights } from "./DailyTab";
 
 const TONE = { ...DAY_TONE, off: "slate" };
-/**
- * Day colours from the site palette (success teal, opportunity gold, danger red, sky blue), so the calendar reads as
- * part of the page in both themes. Each tone is a soft fill, a matching bar along the bottom, and text in the same hue.
- */
-const tone = (fill, text, bar) => ({ cell: `${fill} ${text}`, bar });
-const PRESENT = tone("bg-success/10 dark:bg-success/25", "text-success dark:text-[#a8dcc9]", "bg-success dark:bg-[#6fbfa5]");
-const LATE = tone("bg-opportunity/12 dark:bg-opportunity/25", "text-opportunity-dark dark:text-[#ecd09d]", "bg-opportunity dark:bg-[#d9b06a]");
-const ABSENT = tone("bg-danger/10 dark:bg-danger/30", "text-danger dark:text-[#f8b4b4]", "bg-danger dark:bg-[#f07a7a]");
-const LEAVE = tone("bg-sky/15 dark:bg-sky/20", "text-ocean dark:text-[#bfe0ee]", "bg-sky");
+// Same colours the intern sees in the app calendar. Dark variants keep the same hues on the dark theme.
 const CELL = {
-  present: PRESENT,
-  late: LATE,
-  absent: ABSENT,
-  "absent-no-signin": ABSENT,
-  "absent-approved": LEAVE,
-  leave: LEAVE,
-  "leave-requested": LATE,
-  off: tone("bg-chrome dark:bg-nexus-950/50", "text-nexus-700/40 dark:text-nexus-200/35", null),
-  open: tone("bg-nexus-50 dark:bg-nexus-800/50", "text-nexus-900 dark:text-nexus-50", null),
+  present: "bg-emerald-50 text-emerald-800 ring-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-200 dark:ring-emerald-800",
+  late: "bg-amber-50 text-amber-800 ring-amber-200 dark:bg-amber-950/40 dark:text-amber-200 dark:ring-amber-800",
+  absent: "bg-red-100 text-red-800 ring-red-300 dark:bg-red-950/50 dark:text-red-200 dark:ring-red-800",
+  "absent-no-signin": "bg-red-100 text-red-800 ring-red-300 dark:bg-red-950/50 dark:text-red-200 dark:ring-red-800",
+  "absent-approved": "bg-blue-50 text-blue-800 ring-blue-200 dark:bg-blue-950/40 dark:text-blue-200 dark:ring-blue-800",
+  leave: "bg-blue-50 text-blue-800 ring-blue-200 dark:bg-blue-950/40 dark:text-blue-200 dark:ring-blue-800",
+  "leave-requested": "bg-amber-50 text-amber-800 ring-amber-200 dark:bg-amber-950/40 dark:text-amber-200 dark:ring-amber-800",
+  off: "bg-slate-50 text-slate-400 ring-slate-200 dark:bg-slate-900/50 dark:text-slate-500 dark:ring-slate-700",
+  open: "bg-white text-slate-600 ring-slate-200 dark:bg-nexus-900 dark:text-slate-300 dark:ring-slate-700",
 };
 
 /** "lat, lng" with a copy button: pastes straight into the Google Maps search box. */
@@ -72,7 +64,7 @@ const thisMonth = () => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 };
 
-function toneOf(day) {
+function cellClass(day) {
   if (day.kind === "present" && day.lateMinutes > 0) return CELL.late;
   return CELL[day.kind] || CELL.open;
 }
@@ -92,7 +84,7 @@ function Calendar({ month, days }) {
 
   return (
     <div>
-      <div className="mb-2 grid grid-cols-7 gap-1.5 text-center text-[11px] font-semibold tracking-[0.08em] text-nexus-700/60 uppercase dark:text-nexus-200/60">
+      <div className="mb-1 grid grid-cols-7 gap-1.5 text-center text-xs text-secondary">
         {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((w) => (
           <div key={w}>{w}</div>
         ))}
@@ -102,7 +94,6 @@ function Calendar({ month, days }) {
           if (n == null) return <div key={`e${i}`} />;
           const iso = `${month}-${String(n).padStart(2, "0")}`;
           const day = byDate[iso];
-          const t = day ? toneOf(day) : null;
           return (
             <div
               key={iso}
@@ -112,31 +103,30 @@ function Calendar({ month, days }) {
                   : "Outside internship"
               }
               className={cn(
-                "relative flex h-14 flex-col items-center justify-center overflow-hidden rounded-xl text-sm",
-                t ? t.cell : "text-nexus-700/25 dark:text-nexus-200/20",
-                iso === today && "ring-2 ring-ocean dark:ring-sky",
+                "relative flex h-14 flex-col items-center justify-center rounded-xl text-sm ring-1",
+                day ? cellClass(day) : "bg-transparent text-slate-300 ring-transparent dark:text-slate-600",
+                iso === today && "ring-2 ring-nexus-600 dark:ring-nexus-300",
               )}
             >
-              {day?.manual ? <span className="absolute top-1.5 right-1.5 h-1.5 w-1.5 rounded-full bg-opportunity" aria-label="Edited by admin" /> : null}
-              <span className="font-semibold tabular-nums">{n}</span>
-              {day?.checkIn ? <span className="text-[10px] leading-none tabular-nums opacity-80">{day.checkIn}</span> : null}
-              {t?.bar ? <span className={cn("absolute inset-x-0 bottom-0 h-[3px]", t.bar)} aria-hidden /> : null}
+              {day?.manual ? <span className="absolute top-1 right-1.5 h-1.5 w-1.5 rounded-full bg-amber-500" aria-label="Edited by admin" /> : null}
+              <span className="font-semibold">{n}</span>
+              {day?.checkIn ? <span className="text-[10px] leading-none">{day.checkIn}</span> : null}
             </div>
           );
         })}
       </div>
-      <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2 border-t border-[#d5e3df] pt-3 text-xs text-secondary dark:border-nexus-800">
-        <Legend t={CELL.present} label="On time" />
-        <Legend t={CELL.late} label="Late" />
-        <Legend t={CELL.absent} label="Absent" />
-        <Legend t={CELL.leave} label="Leave / approved" />
-        <Legend t={CELL.off} label="Off day" />
+      <div className="mt-3 flex flex-wrap gap-3 text-xs text-secondary">
+        <Legend cls={CELL.present} label="On time" />
+        <Legend cls={CELL.late} label="Late" />
+        <Legend cls={CELL.absent} label="Absent" />
+        <Legend cls={CELL.leave} label="Leave / approved" />
+        <Legend cls={CELL.off} label="Off day" />
         <span className="flex items-center gap-1.5">
-          <span className="h-1.5 w-1.5 rounded-full bg-opportunity" />
+          <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
           Edited by admin
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="h-3 w-3 rounded ring-2 ring-ocean dark:ring-sky" />
+          <span className="h-3 w-3 rounded ring-2 ring-nexus-600 dark:ring-nexus-300" />
           Today
         </span>
       </div>
@@ -144,11 +134,9 @@ function Calendar({ month, days }) {
   );
 }
 
-const Legend = ({ t, label }) => (
+const Legend = ({ cls, label }) => (
   <span className="flex items-center gap-1.5">
-    <span className={cn("relative h-3 w-3 overflow-hidden rounded", t.cell)}>
-      {t.bar ? <span className={cn("absolute inset-x-0 bottom-0 h-[2px]", t.bar)} /> : null}
-    </span>
+    <span className={`h-3 w-3 rounded ring-1 ${cls}`} />
     {label}
   </span>
 );
@@ -243,7 +231,7 @@ export function MonthlyTab({ applicationId, onChange, self = false, compact = fa
             </Badge>
           </div>
 
-          <div className="card-surface p-4">
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-nexus-800 dark:bg-nexus-900">
             <Calendar month={d.month} days={d.days} />
           </div>
 
@@ -278,7 +266,7 @@ export function MonthlyTab({ applicationId, onChange, self = false, compact = fa
                   render: (r) => (
                     <div>
                       <p>{r.checkIn || "—"}</p>
-                      {r.lateMinutes > 0 ? <p className="text-xs text-danger">{r.lateMinutes}m late</p> : null}
+                      {r.lateMinutes > 0 ? <p className="text-xs text-danger">{duration(r.lateMinutes)} late</p> : null}
                       <Coords lat={r.checkInLatitude} lng={r.checkInLongitude} />
                     </div>
                   ),

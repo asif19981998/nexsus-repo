@@ -133,7 +133,7 @@ public sealed class StudentInternshipService(
     {
         var (app, it) = await MyActiveInternshipAsync();
         if (r.Date is not { } date) throw new BadRequestException("Choose a date.");
-        if (!InternshipRules.IsWorkingDay(date, (await setup.GetSnapshotAsync()).Holidays)) throw new BadRequestException("That date is a weekend or a holiday.");
+        if (!InternshipRules.IsWorkingDay(date, (await setup.GetSnapshotAsync()).Calendar)) throw new BadRequestException("That date is a weekend or a holiday.");
         if (date < it.StartDate || date > it.EndDate) throw new BadRequestException("The date is outside your internship period.");
         var reason = r.Reason?.Trim() ?? "";
         if (reason.Length < 5) throw new BadRequestException("Give a valid reason (cl.11 ঞ).");
