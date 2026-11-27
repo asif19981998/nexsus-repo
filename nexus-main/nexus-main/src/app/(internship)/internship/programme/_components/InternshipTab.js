@@ -190,7 +190,7 @@ export function InternshipTab({ app, onChange, onRefresh }) {
       ) : null}
 
       <Tabs value={tab} onChange={setTab}>
-        <TabList>
+        <TabList variant="line">
           <Tab value="allowance">
             <TabLabel count={can(P.selfBill) ? reportsDue : 0}>Monthly report &amp; allowance</TabLabel>
           </Tab>

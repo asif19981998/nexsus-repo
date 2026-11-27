@@ -1,6 +1,6 @@
 // Permission codes checked by the UGC Internship screens. They mirror
 // backend/Nexus.Application/Security/Permissions.cs; the backend enforces them, the UI only hides what a role cannot do.
-import { Award, CalendarCheck, ClipboardList, Eye, LayoutGrid, Presentation, Sparkles, Users, UserRound } from "lucide-react";
+import { Award, CalendarCheck, ClipboardList, Eye, Gauge, LayoutGrid, Presentation, Sparkles, Users, UserRound } from "lucide-react";
 import { SP, SS_MANAGE_PERMS } from "@/lib/softskillPermissions";
 
 export const P = {
@@ -57,6 +57,8 @@ export const NAV_SECTIONS = [
     key: "programmes",
     title: null,
     items: [
+      // Everyone's landing page: what is waiting on them across every module they work in.
+      { href: "/dashboard", label: "Dashboard", icon: Gauge, perm: null },
       { href: "/programmes", label: "All programmes", icon: LayoutGrid, perm: [P.programmeView, SP.programmeView, SP.trainerApply] },
       { href: "/internship/programme", label: "UGC Internship", icon: Award, perm: [P.programmeView, P.selfView] },
       { href: "/softskill/programme", label: "Soft Skill Training", icon: Sparkles, perm: [SP.programmeView, SP.selfView] },
@@ -73,8 +75,7 @@ export const NAV_SECTIONS = [
     key: "admin",
     title: "Administration",
     items: [
-      // Listed first but not the landing page after sign-in (`home: false`): admins still land on the internship overview.
-      { href: "/internship/users", label: "Users", icon: Users, perm: P.usersView, home: false },
+      { href: "/internship/users", label: "Users", icon: Users, perm: P.usersView },
       {
         href: "/internship/manage",
         label: "UGC Internship",
@@ -119,11 +120,12 @@ export function isTrainer(can) {
   return can(SP.trainerApply);
 }
 
-/** First module or staff screen the user may open, used after sign-in; account pages are the fallback. */
-export function homeFor(can) {
-  const open = INTERNSHIP_NAV.filter((n) => n.perm && allowed(can, n.perm));
-  const first = open.find((n) => n.home !== false) || open[0];
-  return first?.href || "/account/profile";
+/**
+ * Where the user lands after sign-in: the dashboard. Every signed-in user can open it, and it shows only the blocks
+ * their permissions allow, so the answer no longer depends on the role.
+ */
+export function homeFor() {
+  return "/dashboard";
 }
 
 const under = (pathname, href) => pathname === href || !!pathname?.startsWith(href + "/");
@@ -137,6 +139,7 @@ export function isActive(item, pathname) {
 export function headerFor(pathname) {
   if (under(pathname, "/account/notifications")) return "Notifications";
   if (under(pathname, "/account")) return "My profile";
+  if (under(pathname, "/dashboard")) return "Dashboard";
   if (under(pathname, "/programmes")) return "Programmes";
   if (under(pathname, "/softskill")) return "UGC Soft Skill Training";
   return "UGC Internship";
