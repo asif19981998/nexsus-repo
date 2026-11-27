@@ -43,8 +43,9 @@ public sealed class SoftSkillSetupService(IUnitOfWork uow, IClock clock) : ISoft
         var policy = await uow.SoftSkillSetup.GetPolicyAsync();
         var topics = await uow.SoftSkillSetup.GetTopicsAsync();
         var bands = await uow.SoftSkillSetup.GetGradeBandsAsync();
-        var holidays = (await uow.Holidays.GetAllAsync()).Select(h => h.Date).ToHashSet();
-        return new SoftSkillSnapshot(policy, topics, bands, holidays);
+        // One working week for the whole Commission: the weekly off days live on the internship policy.
+        var calendar = WorkCalendar.From(await uow.Setup.GetPolicyAsync(), (await uow.Holidays.GetAllAsync()).Select(h => h.Date));
+        return new SoftSkillSnapshot(policy, topics, bands, calendar);
     }
 
     public async Task<List<UniversityDto>> ListUniversitiesAsync() =>

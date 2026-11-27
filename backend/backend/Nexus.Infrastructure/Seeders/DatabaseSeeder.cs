@@ -492,8 +492,8 @@ public sealed partial class DatabaseSeeder(
             CreatedAt = Utc(createdAt),
         };
 
-    // Demo data declares no holidays, so every weekday is a working day.
-    private static readonly IReadOnlySet<DateOnly> NoHolidays = new HashSet<DateOnly>();
+    // Demo data uses the default week and declares no holidays.
+    private static readonly WorkCalendar NoHolidays = new(WorkCalendar.DefaultWeekend, new HashSet<DateOnly>());
 
     /// <summary>
     /// Attendance up to yesterday: index i is the i-th working day. Indexes in <paramref name="absent"/> get no record

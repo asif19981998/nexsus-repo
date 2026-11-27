@@ -14,7 +14,7 @@ import { LocationsTab } from "./_components/LocationsTab";
 const TABS = [
   { value: "daily", label: "Daily attendance", perm: [P.internViewAll, P.internViewAssigned] },
   { value: "monthly", label: "Monthly view", perm: [P.internViewAll, P.internViewAssigned] },
-  { value: "holidays", label: "Holidays", perm: P.batchManage },
+  { value: "holidays", label: "Weekends & holidays", perm: P.batchManage },
   { value: "locations", label: "Office locations", perm: P.batchManage },
 ];
 

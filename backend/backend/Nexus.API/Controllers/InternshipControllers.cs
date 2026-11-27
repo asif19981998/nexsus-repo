@@ -268,6 +268,15 @@ public class AttendanceAdminController(IAttendanceService attendance) : Controll
         return NoContent();
     }
 
+    /// <summary>The weekly off days. Nobody punches on them and they are not working days for attendance or allowance.</summary>
+    [HttpGet("weekend")]
+    [HasPermission(Permissions.BatchManage)]
+    public async Task<ActionResult<WeekendDto>> Weekend() => Ok(await attendance.GetWeekendAsync());
+
+    [HttpPut("weekend")]
+    [HasPermission(Permissions.BatchManage)]
+    public async Task<ActionResult<WeekendDto>> SetWeekend(WeekendRequest request) => Ok(await attendance.SetWeekendAsync(request));
+
     [HttpGet("departments")]
     [HasPermission(Permissions.BatchManage)]
     public async Task<ActionResult<List<DepartmentLocationDto>>> Departments() => Ok(await attendance.ListDepartmentLocationsAsync());

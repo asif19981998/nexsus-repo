@@ -82,6 +82,15 @@ public class SetupRepository(NexusDbContext ctx) : ISetupRepository
     public async Task<InternshipPolicy> GetPolicyAsync() =>
         await ctx.InternshipPolicies.AsNoTracking().OrderBy(p => p.Id).FirstOrDefaultAsync() ?? new InternshipPolicy();
 
+    public async Task<InternshipPolicy> GetPolicyForUpdateAsync()
+    {
+        var policy = await ctx.InternshipPolicies.OrderBy(p => p.Id).FirstOrDefaultAsync();
+        if (policy is not null) return policy;
+        policy = new InternshipPolicy();
+        ctx.InternshipPolicies.Add(policy);
+        return policy;
+    }
+
     public Task<List<Department>> GetDepartmentsAsync(bool activeOnly) =>
         ctx.Departments.AsNoTracking().Where(d => !activeOnly || d.IsActive).OrderBy(d => d.SortOrder).ThenBy(d => d.Name).ToListAsync();
 

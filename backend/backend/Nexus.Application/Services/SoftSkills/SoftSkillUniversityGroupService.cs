@@ -362,7 +362,7 @@ public sealed class SoftSkillUniversityGroupService(
     {
         var snap = await setup.GetSnapshotAsync();
         var taken = await uow.SoftSkillBatches.TakenSeatsAsync(c.Id);
-        var deadline = SoftSkillRules.ReportDeadline(c.Batch.EndDate, snap.Policy.ReportWorkingDays, snap.Holidays);
+        var deadline = SoftSkillRules.ReportDeadline(c.Batch.EndDate, snap.Policy.ReportWorkingDays, snap.Calendar);
 
         var topics = snap.Topics.Select(t =>
         {

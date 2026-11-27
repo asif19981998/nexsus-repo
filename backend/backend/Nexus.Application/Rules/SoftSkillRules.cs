@@ -5,13 +5,13 @@ namespace Nexus.Application.Rules;
 
 /// <summary>
 /// The policy numbers and lookups one Soft Skill calculation needs, loaded from the database.
-/// <see cref="Holidays"/> are declared public holidays; with the weekend they are not working days (cl.11 ঝ).
+/// <see cref="Calendar"/> holds the weekly off days and declared public holidays: neither is a working day (cl.11 ঝ).
 /// </summary>
 public sealed record SoftSkillSnapshot(
     SoftSkillPolicy Policy,
     IReadOnlyList<SoftSkillTopic> Topics,
     IReadOnlyList<SoftSkillGradeBand> GradeBands,
-    IReadOnlySet<DateOnly> Holidays);
+    WorkCalendar Calendar);
 
 /// <summary>What the Soft Skill cl.7 check reads from the person's main education line.</summary>
 public sealed record SoftSkillAcademic(
@@ -231,8 +231,8 @@ public static class SoftSkillRules
 
     // ---------- learning report (cl.11 ঝ) ----------
 
-    public static DateOnly ReportDeadline(DateOnly endDate, int workingDays, IReadOnlySet<DateOnly> holidays) =>
-        InternshipRules.AddWorkingDays(endDate, workingDays, holidays);
+    public static DateOnly ReportDeadline(DateOnly endDate, int workingDays, WorkCalendar calendar) =>
+        InternshipRules.AddWorkingDays(endDate, workingDays, calendar);
 
     // ---------- outcome (cl.15) ----------
 
@@ -258,7 +258,7 @@ public static class SoftSkillRules
         if (today <= c.Batch.EndDate) pending.Add($"The training runs until {c.Batch.EndDate:dd MMM yyyy}.");
         if (att.BelowMin) reasons.Add($"Attendance {att.Pct}% is below {policy.MinAttendancePct}% (cl.11 ছ).");
 
-        var deadline = ReportDeadline(c.Batch.EndDate, policy.ReportWorkingDays, s.Holidays);
+        var deadline = ReportDeadline(c.Batch.EndDate, policy.ReportWorkingDays, s.Calendar);
         switch (t.Report?.Status)
         {
             case ReportStatus.Accepted:

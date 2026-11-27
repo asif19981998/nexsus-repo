@@ -67,6 +67,12 @@ public class InternshipPolicy : Entity<long>
     public string ShiftName { get; set; } = "Day shift";
     public TimeOnly ShiftStart { get; set; } = new(9, 0);
     public TimeOnly ShiftEnd { get; set; } = new(17, 0);
+
+    /// <summary>
+    /// Weekly off days, chosen by an administrator: day names joined by commas, e.g. "Friday,Saturday"
+    /// (Bangladesh government week). Every module counts working days with this and the Holidays table.
+    /// </summary>
+    public string WeekendDays { get; set; } = "Friday,Saturday";
 }
 
 /// <summary>

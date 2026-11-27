@@ -8,13 +8,46 @@ namespace Nexus.Application.Rules;
 
 /// <summary>
 /// The policy numbers and lookup tables one calculation needs, loaded from the database.
-/// <see cref="Holidays"/> are the declared public holidays: like the weekend, they are not working days.
+/// <see cref="Calendar"/> holds the weekly off days and the declared public holidays: neither is a working day.
 /// </summary>
 public sealed record PolicySnapshot(
     InternshipPolicy Policy,
     IReadOnlyList<EvaluationCriterion> Criteria,
     IReadOnlyList<GradeBand> GradeBands,
-    IReadOnlySet<DateOnly> Holidays);
+    WorkCalendar Calendar);
+
+/// <summary>
+/// Which days are not working days: the weekly off days an administrator chose (<see cref="InternshipPolicy.WeekendDays"/>)
+/// and the declared holidays.
+/// </summary>
+public sealed class WorkCalendar(IReadOnlySet<DayOfWeek> weekend, IReadOnlySet<DateOnly> holidays)
+{
+    /// <summary>The Bangladesh government week, used when nothing has been chosen.</summary>
+    public static readonly IReadOnlySet<DayOfWeek> DefaultWeekend = new HashSet<DayOfWeek> { DayOfWeek.Friday, DayOfWeek.Saturday };
+
+    public IReadOnlySet<DayOfWeek> Weekend { get; } = weekend;
+    public IReadOnlySet<DateOnly> Holidays { get; } = holidays;
+
+    public bool IsWeekend(DateOnly d) => Weekend.Contains(d.DayOfWeek);
+    public bool IsHoliday(DateOnly d) => Holidays.Contains(d);
+    public bool IsWorkingDay(DateOnly d) => !IsWeekend(d) && !IsHoliday(d);
+
+    public static WorkCalendar From(InternshipPolicy policy, IEnumerable<DateOnly> holidays) =>
+        new(ParseWeekend(policy.WeekendDays), holidays.ToHashSet());
+
+    /// <summary>"Friday,Saturday" to the days. Unknown names are skipped; an empty or unreadable value gives the default week.</summary>
+    public static IReadOnlySet<DayOfWeek> ParseWeekend(string? value)
+    {
+        var days = (value ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(s => Enum.TryParse<DayOfWeek>(s, ignoreCase: true, out var d) ? d : (DayOfWeek?)null)
+            .OfType<DayOfWeek>()
+            .ToHashSet();
+        return days.Count is > 0 and < 7 ? days : DefaultWeekend;
+    }
+
+    /// <summary>The days in week order (Sunday first), joined by commas, as stored on the policy.</summary>
+    public static string FormatWeekend(IEnumerable<DayOfWeek> days) => string.Join(",", days.Distinct().Order());
+}
 
 public sealed record EligibilityRule(string Id, string Clause, string Label, bool Met, string Detail, string? Group);
 public sealed record EligibilityResult(bool Eligible, string? Basis, IReadOnlyList<EligibilityRule> Rules);
@@ -85,27 +118,24 @@ public static partial class InternshipRules
 
     // ---------- dates ----------
 
-    /// <summary>Bangladesh government week: Friday and Saturday are the weekend.</summary>
-    public static bool IsWeekend(DateOnly d) => d.DayOfWeek is DayOfWeek.Friday or DayOfWeek.Saturday;
+    /// <summary>A working day is neither a weekly off day nor a declared holiday. Web and mobile attendance both count these.</summary>
+    public static bool IsWorkingDay(DateOnly d, WorkCalendar calendar) => calendar.IsWorkingDay(d);
 
-    /// <summary>A working day is neither a weekend day nor a declared holiday. Web and mobile attendance both count these.</summary>
-    public static bool IsWorkingDay(DateOnly d, IReadOnlySet<DateOnly> holidays) => !IsWeekend(d) && !holidays.Contains(d);
-
-    public static List<DateOnly> WorkingDaysBetween(DateOnly from, DateOnly to, IReadOnlySet<DateOnly> holidays)
+    public static List<DateOnly> WorkingDaysBetween(DateOnly from, DateOnly to, WorkCalendar calendar)
     {
         var list = new List<DateOnly>();
         for (var d = from; d <= to; d = d.AddDays(1))
-            if (IsWorkingDay(d, holidays)) list.Add(d);
+            if (calendar.IsWorkingDay(d)) list.Add(d);
         return list;
     }
 
-    public static DateOnly AddWorkingDays(DateOnly d, int n, IReadOnlySet<DateOnly> holidays)
+    public static DateOnly AddWorkingDays(DateOnly d, int n, WorkCalendar calendar)
     {
         var cur = d;
         while (n > 0)
         {
             cur = cur.AddDays(1);
-            if (IsWorkingDay(cur, holidays)) n--;
+            if (calendar.IsWorkingDay(cur)) n--;
         }
         return cur;
     }
@@ -207,10 +237,10 @@ public static partial class InternshipRules
     // ---------- attendance (cl.11) ----------
 
     /// <summary>Working days of the internship that are already closed (before today and not after the end date).</summary>
-    public static List<DateOnly> ClosedDays(Internship it, DateOnly today, IReadOnlySet<DateOnly> holidays)
+    public static List<DateOnly> ClosedDays(Internship it, DateOnly today, WorkCalendar calendar)
     {
         var upto = Min(it.EndDate, today.AddDays(-1));
-        return upto < it.StartDate ? [] : WorkingDaysBetween(it.StartDate, upto, holidays);
+        return upto < it.StartDate ? [] : WorkingDaysBetween(it.StartDate, upto, calendar);
     }
 
     public static DayState DayStatus(AttendanceRecord? rec, DateOnly date, DateOnly today)
@@ -242,7 +272,7 @@ public static partial class InternshipRules
     {
         var policy = p.Policy;
         var byDate = it.Attendance.ToDictionary(a => a.Date);
-        var days = ClosedDays(it, today, p.Holidays);
+        var days = ClosedDays(it, today, p.Calendar);
         int present = 0, approved = 0, unapproved = 0;
         foreach (var d in days)
         {
@@ -255,7 +285,7 @@ public static partial class InternshipRules
         // Today counts once the intern has signed in.
         var required = days.Count;
         if (byDate.TryGetValue(today, out var t) && t.Status == AttendanceStatus.Present
-            && today >= it.StartDate && today <= it.EndDate && IsWorkingDay(today, p.Holidays))
+            && today >= it.StartDate && today <= it.EndDate && IsWorkingDay(today, p.Calendar))
         {
             present++;
             required++;
@@ -285,7 +315,7 @@ public static partial class InternshipRules
     public static List<BillView> MonthlyBills(Internship it, DateOnly today, PolicySnapshot p)
     {
         var policy = p.Policy;
-        var holidays = p.Holidays;
+        var calendar = p.Calendar;
         var byDate = it.Attendance.ToDictionary(a => a.Date);
         var records = it.Bills.ToDictionary(b => b.Month);
         var keys = MonthsInRange(it.StartDate, it.EndDate);
@@ -297,10 +327,10 @@ public static partial class InternshipRules
         return keys.Where(key => Max(it.StartDate, MonthBounds(key).First) <= today).Select(key =>
         {
             var (first, last) = MonthBounds(key);
-            var monthDays = WorkingDaysBetween(first, last, holidays).Count;
+            var monthDays = WorkingDaysBetween(first, last, calendar).Count;
             var from = Max(it.StartDate, first);
             var to = Min(it.EndDate, last);
-            var periodDays = WorkingDaysBetween(from, to, holidays);
+            var periodDays = WorkingDaysBetween(from, to, calendar);
             var dailyRate = monthDays > 0 ? allowance / monthDays : 0;
             var gross = (int)Math.Round(allowance * (monthDays > 0 ? (double)periodDays.Count / monthDays : 0), MidpointRounding.AwayFromZero);
 
@@ -352,7 +382,7 @@ public static partial class InternshipRules
 
     // ---------- report, evaluation, certificate (cl.11, cl.14, cl.15) ----------
 
-    public static DateOnly ReportDeadline(Internship it, PolicySnapshot p) => AddWorkingDays(it.EndDate, p.Policy.ReportWorkingDays, p.Holidays);
+    public static DateOnly ReportDeadline(Internship it, PolicySnapshot p) => AddWorkingDays(it.EndDate, p.Policy.ReportWorkingDays, p.Calendar);
 
     /// <summary>
     /// cl.14: why the department cannot evaluate yet, or null when it can.

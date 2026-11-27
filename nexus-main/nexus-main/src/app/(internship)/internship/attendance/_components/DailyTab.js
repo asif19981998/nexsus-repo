@@ -18,6 +18,13 @@ const todayIso = () => {
 
 export const minutes = (m) => (m == null ? "—" : `${Math.floor(m / 60)}h ${String(m % 60).padStart(2, "0")}m`);
 
+/** A short duration for lateness: "45m", "2h", "12h 55m". */
+export const duration = (m) => {
+  const h = Math.floor(m / 60);
+  const rest = m % 60;
+  return h === 0 ? `${rest}m` : rest === 0 ? `${h}h` : `${h}h ${rest}m`;
+};
+
 /** Shown on a day an admin set by hand (times typed in, or marked absent), so it is not mistaken for a real punch. */
 export function ManualTag({ row }) {
   if (!row.manual) return null;
@@ -135,7 +142,7 @@ export function DailyTab() {
             render: (r) => (
               <div>
                 <p>{r.checkIn || "—"}</p>
-                {r.lateMinutes > 0 ? <p className="text-xs text-danger">{r.lateMinutes}m late</p> : r.checkIn ? <p className="text-xs text-secondary">On time</p> : null}
+                {r.lateMinutes > 0 ? <p className="text-xs text-danger">{duration(r.lateMinutes)} late</p> : r.checkIn ? <p className="text-xs text-secondary">On time</p> : null}
               </div>
             ),
           },

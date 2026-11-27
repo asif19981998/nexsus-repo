@@ -1606,6 +1606,13 @@ namespace Nexus.Infrastructure.Migrations
                     b.Property<TimeOnly>("ShiftStart")
                         .HasColumnType("time");
 
+                    b.Property<string>("WeekendDays")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)")
+                        .HasDefaultValue("Friday,Saturday");
+
                     b.HasKey("Id");
 
                     b.ToTable("InternshipPolicy", (string)null);

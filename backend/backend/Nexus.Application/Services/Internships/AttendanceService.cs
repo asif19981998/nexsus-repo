@@ -48,6 +48,10 @@ public sealed class PunchRequest
 }
 
 public sealed record HolidayDto(long Id, string Date, string Name);
+
+/// <summary>The weekly off days, Sunday first, e.g. ["Friday", "Saturday"].</summary>
+public sealed record WeekendDto(IReadOnlyList<string> Days);
+public sealed class WeekendRequest { public List<string>? Days { get; set; } }
 public sealed class HolidayRequest { public DateOnly? Date { get; set; } public string? Name { get; set; } }
 public sealed record DepartmentLocationDto(long Id, string Name, double? Latitude, double? Longitude, int RadiusMeters);
 public sealed class DepartmentLocationRequest { public double? Latitude { get; set; } public double? Longitude { get; set; } public int? RadiusMeters { get; set; } }
@@ -96,6 +100,10 @@ public interface IAttendanceService
     Task<List<HolidayDto>> ListHolidaysAsync();
     Task<HolidayDto> AddHolidayAsync(HolidayRequest request);
     Task RemoveHolidayAsync(long id);
+    Task<WeekendDto> GetWeekendAsync();
+
+    /// <summary>Sets the weekly off days. At least one day of the week must stay a working day.</summary>
+    Task<WeekendDto> SetWeekendAsync(WeekendRequest request);
     Task<List<DepartmentLocationDto>> ListDepartmentLocationsAsync();
     Task<DepartmentLocationDto> SetDepartmentLocationAsync(long id, DepartmentLocationRequest request);
 }
@@ -215,9 +223,9 @@ public sealed class AttendanceService(IUnitOfWork uow, ICurrentUserService me, I
         var total = end.DayNumber - start.DayNumber + 1;
         var days = Enumerable.Range(0, total).Select(i => end.AddDays(-i)) // newest first
             .Skip((page - 1) * pageSize).Take(pageSize).ToList();
-        var holidays = await HolidayDatesAsync(days.Min(), days.Max());
+        var calendar = await CalendarAsync(ctx.Policy, days.Min(), days.Max());
         var items = new List<AttendanceDayDto>();
-        foreach (var d in days) items.Add(await BuildDayAsync(ctx, d, holidays));
+        foreach (var d in days) items.Add(await BuildDayAsync(ctx, d, calendar));
         return new AttendanceHistoryDto(items, page, pageSize, total, page * pageSize < total);
     }
 
@@ -229,7 +237,8 @@ public sealed class AttendanceService(IUnitOfWork uow, ICurrentUserService me, I
         var day = date ?? today;
         var policy = await uow.Setup.GetPolicyAsync();
         var holiday = await uow.Holidays.GetSingleAsync(h => h.Date == day);
-        var dayType = holiday is not null ? "HOLIDAY" : InternshipRules.IsWeekend(day) ? "WEEKLY_OFF" : "WORKING";
+        var weekend = WorkCalendar.ParseWeekend(policy.WeekendDays);
+        var dayType = holiday is not null ? "HOLIDAY" : weekend.Contains(day.DayOfWeek) ? "WEEKLY_OFF" : "WORKING";
 
         var apps = await uow.Applications.ListInternsAsync([ApplicationStatus.Active], await MentorScopeAsync());
         var names = await EditorNamesAsync(apps.SelectMany(a => a.Internship!.Attendance).Where(r => r.Date == day).Select(r => r.DecidedById));
@@ -285,6 +294,7 @@ public sealed class AttendanceService(IUnitOfWork uow, ICurrentUserService me, I
         var policy = await uow.Setup.GetPolicyAsync();
         var holidayList = await uow.Holidays.FindAsync(h => h.Date >= first && h.Date <= last);
         var holidays = holidayList.ToDictionary(h => h.Date, h => h.Name);
+        var weekend = WorkCalendar.ParseWeekend(policy.WeekendDays);
 
         var names = await EditorNamesAsync(it.Attendance.Where(r => r.Date >= first && r.Date <= last).Select(r => r.DecidedById));
         var days = new List<AdminMonthDayDto>();
@@ -292,7 +302,7 @@ public sealed class AttendanceService(IUnitOfWork uow, ICurrentUserService me, I
         {
             if (d < it.StartDate || d > it.EndDate) continue;
             holidays.TryGetValue(d, out var holidayName);
-            var dayType = holidayName is not null ? "HOLIDAY" : InternshipRules.IsWeekend(d) ? "WEEKLY_OFF" : "WORKING";
+            var dayType = holidayName is not null ? "HOLIDAY" : weekend.Contains(d.DayOfWeek) ? "WEEKLY_OFF" : "WORKING";
             days.Add(BuildCell(it, d, dayType, holidayName, policy, today, names));
         }
 
@@ -376,6 +386,31 @@ public sealed class AttendanceService(IUnitOfWork uow, ICurrentUserService me, I
         await uow.SaveChangesAsync();
     }
 
+    public async Task<WeekendDto> GetWeekendAsync() =>
+        ToDto(WorkCalendar.ParseWeekend((await uow.Setup.GetPolicyAsync()).WeekendDays));
+
+    public async Task<WeekendDto> SetWeekendAsync(WeekendRequest r)
+    {
+        var days = new HashSet<DayOfWeek>();
+        foreach (var name in r.Days ?? [])
+        {
+            if (!Enum.TryParse<DayOfWeek>(name?.Trim(), ignoreCase: true, out var day) || !Enum.IsDefined(day) || int.TryParse(name, out _))
+                throw new BadRequestException($"\"{name}\" is not a day of the week.");
+            days.Add(day);
+        }
+        if (days.Count == 0) throw new BadRequestException("Choose at least one weekly off day.");
+        if (days.Count == 7) throw new BadRequestException("At least one day of the week must be a working day.");
+
+        var policy = await uow.Setup.GetPolicyForUpdateAsync();
+        var before = policy.WeekendDays;
+        policy.WeekendDays = WorkCalendar.FormatWeekend(days);
+        await audit.LogAsync("weekend.set", "InternshipPolicy", policy.Id, $"{before} -> {policy.WeekendDays}");
+        await uow.SaveChangesAsync();
+        return ToDto(days);
+    }
+
+    private static WeekendDto ToDto(IReadOnlySet<DayOfWeek> days) => new(days.Order().Select(d => d.ToString()).ToList());
+
     public async Task<List<DepartmentLocationDto>> ListDepartmentLocationsAsync() =>
         (await uow.Setup.GetDepartmentsAsync(activeOnly: false)).Select(ToDto).ToList();
 
@@ -410,20 +445,21 @@ public sealed class AttendanceService(IUnitOfWork uow, ICurrentUserService me, I
         return new Ctx(app, it, dept, await uow.Setup.GetPolicyAsync());
     }
 
-    private async Task<HashSet<DateOnly>> HolidayDatesAsync(DateOnly from, DateOnly to) =>
-        (await uow.Holidays.FindAsync(h => h.Date >= from && h.Date <= to)).Select(h => h.Date).ToHashSet();
+    /// <summary>The policy's weekly off days and the holidays declared between the two dates.</summary>
+    private async Task<WorkCalendar> CalendarAsync(InternshipPolicy policy, DateOnly from, DateOnly to) =>
+        WorkCalendar.From(policy, (await uow.Holidays.FindAsync(h => h.Date >= from && h.Date <= to)).Select(h => h.Date));
 
-    private async Task<AttendanceDayDto> BuildDayAsync(Ctx c, DateOnly date, HashSet<DateOnly>? holidays = null)
+    private async Task<AttendanceDayDto> BuildDayAsync(Ctx c, DateOnly date, WorkCalendar? calendar = null)
     {
-        holidays ??= await HolidayDatesAsync(date, date);
+        calendar ??= await CalendarAsync(c.Policy, date, date);
         var today = clock.Today;
         var rec = c.Internship.Attendance.FirstOrDefault(a => a.Date == date);
         var inPeriod = date >= c.Internship.StartDate && date <= c.Internship.EndDate;
 
         var dayType =
             !inPeriod ? "UNSCHEDULED" :
-            holidays.Contains(date) ? "HOLIDAY" :
-            InternshipRules.IsWeekend(date) ? "WEEKLY_OFF" :
+            calendar.IsHoliday(date) ? "HOLIDAY" :
+            calendar.IsWeekend(date) ? "WEEKLY_OFF" :
             rec?.Status == AttendanceStatus.Leave ? "LEAVE" : "WORKING";
 
         string status, action = "NONE";
