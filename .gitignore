@@ -1,0 +1,18 @@
+# .NET
+bin/
+obj/
+.vs/
+*.user
+*.suo
+appsettings.Development.json
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+.env*
+!.env.example
+
+# misc
+.DS_Store
+Thumbs.db

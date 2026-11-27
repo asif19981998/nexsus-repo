@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Prototype — Account profile and document library (all modules)</title>
+<style>
+  :root { --bg:#f6f7f9; --card:#fff; --line:#e3e6eb; --text:#16202c; --muted:#5d6b7a; --brand:#0f6b4f; --brand-soft:#e7f4ef;
+          --amber:#9a6200; --amber-soft:#fff4dd; --red:#b42318; --red-soft:#fdecea; --blue:#1d4ed8; --blue-soft:#e8efff; --side:#0f1b2b; }
+  * { box-sizing:border-box; }
+  body { margin:0; font:14px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background:var(--bg); color:var(--text); }
+  header.proto { position:sticky; top:0; z-index:20; background:#101826; color:#fff; padding:8px 16px; display:flex; gap:14px; align-items:center; flex-wrap:wrap; }
+  header.proto b { font-size:12px; letter-spacing:.03em; }
+  header.proto nav { display:flex; gap:6px; flex-wrap:wrap; }
+  header.proto button { background:#223047; color:#d6deea; border:0; border-radius:6px; padding:5px 9px; cursor:pointer; font-size:12px; }
+  header.proto button.on { background:#fff; color:#101826; font-weight:600; }
+  .app { display:grid; grid-template-columns:230px 1fr; min-height:calc(100vh - 44px); }
+  aside.side { background:var(--side); color:#c9d3e0; padding:16px 10px; }
+  aside.side .logo { color:#fff; font-weight:800; font-size:16px; padding:0 10px 14px; }
+  aside.side .who { margin:0 6px 16px; padding:10px; background:#18273b; border-radius:10px; font-size:12px; }
+  aside.side .who b { color:#fff; display:block; font-size:13px; }
+  aside.side h6 { margin:14px 10px 6px; font-size:10px; letter-spacing:.14em; color:#7f8ea3; text-transform:uppercase; }
+  aside.side a { display:flex; justify-content:space-between; align-items:center; padding:7px 10px; border-radius:8px; color:#c9d3e0; text-decoration:none; cursor:pointer; font-size:13px; }
+  aside.side a:hover { background:#18273b; } aside.side a.on { background:#fff; color:#0f1b2b; font-weight:600; }
+  aside.side a .pill { font-size:10px; background:#2b3d56; color:#c9d3e0; border-radius:999px; padding:1px 7px; }
+  aside.side a.on .pill { background:var(--brand-soft); color:var(--brand); }
+  main { padding:22px 26px 60px; max-width:1180px; }
+  .screen { display:none; } .screen.on { display:block; }
+  .note { background:#fffbea; border:1px dashed #d9b84a; border-radius:8px; padding:10px 14px; margin-bottom:16px; font-size:13px; color:#5c4a00; }
+  .note b { color:#3d3100; } .note ul { margin:4px 0 0; padding-left:18px; }
+  .decide { background:#eef4ff; border:1px dashed #7c9be0; color:#1f3a7a; }
+  .decide b { color:#14285a; }
+  h1 { font-size:21px; margin:0 0 2px; } h2 { font-size:15px; margin:0 0 10px; } h3 { font-size:13px; margin:0 0 6px; }
+  .muted { color:var(--muted); } .small { font-size:12px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px; }
+  .grid { display:grid; gap:14px; } .g2 { grid-template-columns:1fr 1fr; } .g3 { grid-template-columns:repeat(3,1fr); } .g32 { grid-template-columns:2fr 1fr; }
+  .row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; } .between { justify-content:space-between; }
+  .ph { margin-bottom:16px; }
+  label.f { display:block; font-size:12px; font-weight:600; color:#334; margin-bottom:4px; }
+  input, select, textarea { width:100%; padding:7px 10px; border:1px solid #cfd5dd; border-radius:8px; font:inherit; background:#fff; }
+  input[type=checkbox], input[type=radio] { width:auto; }
+  .hint { font-size:12px; color:var(--muted); margin-top:3px; }
+  .btn { border:1px solid #cfd5dd; background:#fff; border-radius:8px; padding:7px 13px; cursor:pointer; font:inherit; font-weight:600; font-size:13px; }
+  .btn.primary { background:var(--brand); border-color:var(--brand); color:#fff; }
+  .btn.danger { color:var(--red); border-color:#f1b8b2; } .btn.sm { padding:3px 9px; font-size:12px; }
+  .btn:disabled { opacity:.45; cursor:not-allowed; }
+  .badge { display:inline-block; font-size:11px; font-weight:700; padding:2px 8px; border-radius:999px; background:#eef1f4; color:#3a4654; white-space:nowrap; }
+  .badge.green { background:var(--brand-soft); color:var(--brand); } .badge.amber { background:var(--amber-soft); color:var(--amber); }
+  .badge.red { background:var(--red-soft); color:var(--red); } .badge.blue { background:var(--blue-soft); color:var(--blue); }
+  .tabs { display:flex; gap:4px; border-bottom:1px solid var(--line); margin-bottom:14px; }
+  .tabs button { border:0; background:none; padding:8px 12px; cursor:pointer; font:inherit; color:var(--muted); border-bottom:2px solid transparent; }
+  .tabs button.on { color:var(--text); font-weight:700; border-color:var(--brand); }
+  table { width:100%; border-collapse:collapse; } th, td { text-align:left; padding:8px 10px; border-bottom:1px solid var(--line); font-size:13px; vertical-align:middle; }
+  th { font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); background:#fafbfc; }
+  .cat { margin-bottom:16px; }
+  .cat h3 { text-transform:uppercase; letter-spacing:.08em; font-size:11px; color:var(--muted); }
+  .doc { display:grid; grid-template-columns:36px 1fr auto; gap:12px; align-items:center; border:1px solid var(--line); border-radius:10px; padding:10px 12px; background:#fff; margin-bottom:8px; }
+  .doc .ic { width:36px; height:36px; border-radius:8px; background:#eef1f4; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:800; color:#556; }
+  .doc.has .ic { background:var(--brand-soft); color:var(--brand); }
+  .doc .meta { font-size:12px; color:var(--muted); }
+  .used { font-size:11px; color:var(--blue); }
+  .check { display:grid; grid-template-columns:22px 1fr auto; gap:10px; align-items:center; padding:9px 0; border-bottom:1px solid #f0f2f5; }
+  .check:last-child { border:0; }
+  .ok { color:var(--brand); font-weight:800; } .no { color:var(--red); font-weight:800; } .wait { color:var(--amber); font-weight:800; } .opt { color:#99a3ae; font-weight:800; }
+  .edu { border:1px solid var(--line); border-radius:10px; padding:12px; margin-bottom:8px; display:grid; grid-template-columns:1fr auto; gap:8px; }
+  .edu.main { border-left:3px solid var(--brand); }
+  .preview { height:170px; border-radius:8px; background:repeating-linear-gradient(45deg,#f1f3f6,#f1f3f6 10px,#e8ebef 10px,#e8ebef 20px); display:flex; align-items:center; justify-content:center; color:#778; font-size:12px; }
+  .modal-bg { position:fixed; inset:0; background:rgba(10,20,30,.45); display:none; align-items:center; justify-content:center; z-index:30; }
+  .modal-bg.on { display:flex; } .modal { background:#fff; border-radius:14px; padding:18px; width:min(520px, 92vw); }
+  .er { display:grid; grid-template-columns:repeat(3, 1fr); gap:14px; }
+  .ent { border:1px solid var(--line); border-radius:10px; background:#fff; overflow:hidden; font-size:12px; }
+  .ent h4 { margin:0; padding:7px 10px; background:#101826; color:#fff; font-size:12px; }
+  .ent.new h4 { background:var(--brand); } .ent.mod h4 { background:#6b4f0f; }
+  .ent div { padding:3px 10px; border-bottom:1px solid #f2f4f7; font-family:ui-monospace, Consolas, monospace; font-size:11.5px; }
+  .ent div.k { color:var(--blue); } .ent div i { color:var(--muted); font-style:normal; }
+  .stat { border:1px solid var(--line); border-radius:10px; padding:12px; background:#fff; } .stat b { font-size:22px; display:block; }
+  .switch { display:inline-flex; align-items:center; gap:8px; cursor:pointer; font-size:13px; }
+  @media (max-width:980px) { .app { grid-template-columns:1fr; } aside.side { display:none; } .g2, .g3, .g32, .er { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+<header class="proto">
+  <b>PROTOTYPE · not wired to API · state is in this page only</b>
+  <nav id="proto"></nav>
+</header>
+
+<div class="app">
+  <aside class="side">
+    <div class="logo">Nexus</div>
+    <div class="who" id="who"></div>
+    <div id="sidenav"></div>
+  </aside>
+
+  <main>
+    <!-- ============ PROFILE ============ -->
+    <section class="screen" id="s-profile">
+      <div class="note">
+        <b>My profile — account-এর অংশ, কোনো module-এর না।</b> URL <code>/account/profile</code>. একবার পূরণ করলে Internship, Skill Training, Job — সব module এখান থেকে পড়বে।
+        <ul>
+          <li><b>Personal</b>: জন্ম তারিখ, লিঙ্গ, পরিচয়পত্রের নম্বর, ঠিকানা।</li>
+          <li><b>Education</b>: একাধিক row (SSC, HSC, স্নাতক, স্নাতকোত্তর)। Internship-এর cl.7 শুধু <span class="badge green">Main</span> চিহ্নিত উচ্চশিক্ষার row পড়ে। Job module পরে SSC/HSC-ও পড়বে।</li>
+          <li><b>Account</b>: নাম, ইমেইল, মোবাইল, পাসওয়ার্ড।</li>
+        </ul>
+      </div>
+      <div class="row between ph">
+        <div><h1>My profile</h1><div class="muted">Used by every programme you apply to.</div></div>
+        <div class="row" id="completeness"></div>
+      </div>
+      <div class="tabs" id="ptabs">
+        <button data-t="personal" class="on">Personal</button><button data-t="education">Education</button><button data-t="account">Account</button>
+      </div>
+
+      <div data-p="personal">
+        <div class="grid g32">
+          <div class="card grid g2">
+            <div><label class="f">Full name</label><input value="Karim Hasan" disabled><div class="hint">From sign-up. Change in Account.</div></div>
+            <div><label class="f">Date of birth *</label><input type="date" value="2002-03-14"></div>
+            <div><label class="f">Gender</label><select><option>Male</option><option>Female</option><option>Other</option><option>Prefer not to say</option></select></div>
+            <div><label class="f">Identity document *</label><select><option>National ID</option><option>Birth registration</option><option>Passport</option></select></div>
+            <div><label class="f">ID number *</label><input value="1995 2610 4432 117"><div class="hint">One account per ID number.</div></div>
+            <div><label class="f">District</label><select><option>Dhaka</option><option>Chattogram</option><option>Rajshahi</option></select></div>
+            <div style="grid-column:1/-1"><label class="f">Present address</label><textarea rows="2">House 12, Road 4, Mirpur 10, Dhaka</textarea></div>
+            <div style="grid-column:1/-1" class="row"><button class="btn primary">Save</button></div>
+          </div>
+          <div class="card">
+            <h2>Identity</h2>
+            <div id="identityBox"></div>
+          </div>
+        </div>
+      </div>
+
+      <div data-p="education" hidden>
+        <div class="grid g32">
+          <div class="card">
+            <div class="row between"><h2>Education</h2><button class="btn sm" onclick="addEdu()">+ Add education</button></div>
+            <div id="eduList"></div>
+          </div>
+          <div class="card">
+            <h2>What reads this</h2>
+            <div class="small">
+              <p><b>UGC Internship (cl.7)</b> — the <span class="badge green">Main</span> row: studying in year 4, a postgraduate, or finished within 12 months.</p>
+              <p><b>Skill Training</b> — highest finished level (HSC or above, as an example).</p>
+              <p><b>Job seeking</b> (later) — the whole history, shown on the CV.</p>
+              <p class="muted">Rows become read-only while an application that used them is in progress.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div data-p="account" hidden>
+        <div class="card grid g2" style="max-width:720px">
+          <div><label class="f">Full name</label><input value="Karim Hasan"></div>
+          <div><label class="f">Email (sign-in)</label><input value="karim@example.com" disabled><div class="hint">Ask the administrator to change it.</div></div>
+          <div><label class="f">Mobile number</label><input value="01812345678"></div>
+          <div><label class="f">Password</label><button class="btn">Change password</button></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ DOCUMENTS ============ -->
+    <section class="screen" id="s-docs">
+      <div class="note">
+        <b>My documents — একটা library, সব module-এর জন্য।</b> URL <code>/account/documents</code>.
+        <ul>
+          <li>ধরন অনুযায়ী ভাগ: Identity, Academic, Career, Other। ধরনের তালিকা admin-এর settings থেকে আসে।</li>
+          <li>প্রতিটা document-এর পাশে লেখা থাকে কোন module-এ লাগে (<span class="used">Needed by: UGC Internship</span>)।</li>
+          <li>একই ধরনের নতুন ফাইল দিলে <b>নতুন version</b> হয়। আগের version কোনো আবেদনে ব্যবহার হয়ে থাকলে থেকে যায়; না হলে মুছে যায়।</li>
+          <li>চলমান আবেদনে ব্যবহার হওয়া document মোছা যায় না।</li>
+          <li>Admin একবার Verify করলে সব module-এ Verified।</li>
+        </ul>
+        Try: Upload transcript → Internship checklist বদলে যাবে। Admin screen-এ Verify করুন → এখানে Verified দেখাবে।
+      </div>
+      <div class="row between ph">
+        <div><h1>My documents</h1><div class="muted">Upload once. Every programme you apply to uses these.</div></div>
+        <div class="row"><select id="docFilter" style="width:auto" onchange="renderDocs()"><option value="">All documents</option><option value="internship">Needed by UGC Internship</option><option value="training">Needed by Skill Training</option></select>
+        <button class="btn primary" onclick="openUpload()">+ Upload document</button></div>
+      </div>
+      <div class="grid g3" id="docStats" style="margin-bottom:16px"></div>
+      <div id="docList"></div>
+    </section>
+
+    <!-- ============ INTERNSHIP APPLY ============ -->
+    <section class="screen" id="s-intern">
+      <div class="note">
+        <b>Module: UGC Internship → Apply.</b> Module নিজের document রাখে না; requirement তালিকা (admin settings) দেখে library-তে মিলিয়ে checklist বানায়।
+        <ul>
+          <li>শর্ত profile থেকে: Main education "Studying" হলে ছাত্রত্ব সনদ, "Finished" হলে ডিগ্রির সনদ।</li>
+          <li>"যেকোনো একটা": NID / Birth registration / Passport।</li>
+          <li>Submit করলে তখনকার version আবেদনের সাথে আটকে যায় (<code>ApplicationDocuments</code>)।</li>
+        </ul>
+      </div>
+      <div class="row between ph"><div><h1>Apply — 2027 Batch 1</h1><div class="muted">UGC Internship · applications close 15 Jan 2027</div></div>
+        <div class="toggle row small">Main education:
+          <select id="eduStatus" style="width:auto" onchange="state.eduStatus=this.value; renderAll()"><option value="studying">Studying (year 4)</option><option value="graduated">Finished (May 2026)</option></select></div>
+      </div>
+      <div class="grid g32">
+        <div class="card"><h2>Documents for this programme</h2><div id="internCheck"></div></div>
+        <div class="grid" style="align-content:start">
+          <div class="card"><h2>Eligibility (cl.7)</h2><div id="internElig" class="small"></div></div>
+          <div class="card"><h2>Submit</h2><div id="internSubmit"></div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ TRAINING ============ -->
+    <section class="screen" id="s-training">
+      <div class="note">
+        <b>Future module: Skill Training → Enrol.</b> নতুন module যোগ করতে শুধু requirement তালিকায় row লাগবে। Photo, NID, CV আগে upload করা থাকলে এখানে সরাসরি ✓ হয়ে যায় — দ্বিতীয়বার upload লাগে না।
+      </div>
+      <div class="ph"><h1>Enrol — Data Analytics Bootcamp</h1><div class="muted">Skill Training · 8 weeks · starts 1 Feb 2027</div></div>
+      <div class="grid g32">
+        <div class="card"><h2>Documents for this course</h2><div id="trainCheck"></div></div>
+        <div class="card"><h2>Submit</h2><div id="trainSubmit"></div></div>
+      </div>
+    </section>
+
+    <!-- ============ ADMIN REVIEW ============ -->
+    <section class="screen" id="s-review">
+      <div class="note">
+        <b>Admin: Users → a student → Documents tab.</b> Admin এক জায়গায় সব document দেখেন, module যাই হোক।
+        <ul>
+          <li>Verify / Reject (reason সহ)। Reject হলে student notification পায়, আবার upload করে।</li>
+          <li>একটা identity document Verified হলে account-এর <b>Identity verified</b> নিজে থেকে চালু হয় — Internship-এর "identity" শর্ত পূরণ।</li>
+        </ul>
+      </div>
+      <div class="row between ph"><div><h1>Karim Hasan</h1><div class="muted">Student · karim@example.com · 01812345678</div></div><div id="adminIdentity"></div></div>
+      <div class="tabs"><button>Details</button><button class="on">Documents</button><button>Applications</button></div>
+      <div class="grid g32">
+        <div class="card" style="padding:0"><table><thead><tr><th>Document</th><th>File</th><th>Status</th><th></th></tr></thead><tbody id="reviewRows"></tbody></table></div>
+        <div class="card"><h2 id="pvTitle">Preview</h2><div class="preview" id="pvBox">Select a document</div><div id="pvActions" style="margin-top:10px"></div></div>
+      </div>
+    </section>
+
+    <!-- ============ ADMIN SETTINGS ============ -->
+    <section class="screen" id="s-settings">
+      <div class="note">
+        <b>Admin: Document settings.</b> দুটো তালিকা — code না বদলে নতুন module বা নতুন ধরন যোগ করা যায়।
+        <ul><li><b>Document types</b>: নাম, ভাগ, format, সর্বোচ্চ size।</li><li><b>Requirements</b>: module অনুযায়ী কোনটা লাগে, বাধ্যতামূলক কিনা, শর্ত।</li></ul>
+      </div>
+      <div class="note decide">
+        <b>সিদ্ধান্ত দরকার:</b> আবেদন জমার সময় document <b>Verified</b> হতেই হবে, নাকি upload থাকলেই চলবে (আবেদনের review-এর সময় যাচাই)? নিচের switch বদলে Internship screen-এ পার্থক্য দেখুন।
+        <div style="margin-top:6px"><label class="switch"><input type="checkbox" id="needVerified" onchange="state.needVerified=this.checked; renderAll()"> Only verified documents count when applying</label></div>
+      </div>
+      <div class="tabs" id="stabs"><button data-t="types" class="on">Document types</button><button data-t="req">Requirements by module</button></div>
+      <div data-st="types"><div class="card" style="padding:0"><table><thead><tr><th>Code</th><th>Name</th><th>Category</th><th>Formats</th><th>Max</th><th>Active</th></tr></thead><tbody id="typeRows"></tbody></table></div>
+        <div class="row" style="margin-top:10px"><button class="btn">+ Add document type</button></div></div>
+      <div data-st="req" hidden>
+        <div class="row" style="margin-bottom:10px"><select id="reqModule" style="width:auto" onchange="renderSettings()"><option value="internship">UGC Internship</option><option value="training">Skill Training</option></select></div>
+        <div class="card" style="padding:0"><table><thead><tr><th>Document</th><th>Required</th><th>When</th><th>Note for the applicant</th></tr></thead><tbody id="reqRows"></tbody></table></div>
+        <div class="row" style="margin-top:10px"><button class="btn">+ Add requirement</button></div>
+      </div>
+    </section>
+
+    <!-- ============ DATA MODEL ============ -->
+    <section class="screen" id="s-model">
+      <div class="note">
+        <b>Database design.</b> <span class="badge">existing</span> <span class="badge amber">changed</span> <span class="badge green">new</span>.
+        Account স্তরে: Users, PersonalProfiles, Educations, UserDocuments। Module স্তরে: ModuleDocumentRequirements আর প্রতিটা module-এর আবেদনের table-এর সাথে ApplicationDocuments।
+      </div>
+      <div class="er">
+        <div class="ent mod"><h4>Users (changed)</h4><div class="k">Id</div><div>FullName, Email, PhoneNumber</div><div>PasswordHash …</div><div>IdentityVerified <i>bit — moved here</i></div><div>IdentityVerifiedAt, IdentityVerifiedById</div></div>
+        <div class="ent new"><h4>PersonalProfiles</h4><div class="k">UserId (PK, FK Users)</div><div>DateOfBirth <i>date</i></div><div>Gender <i>int?</i></div><div>IdType <i>NID | Birth | Passport</i></div><div>IdNumber <i>unique</i></div><div>District, Address</div></div>
+        <div class="ent new"><h4>Educations</h4><div class="k">Id</div><div class="k">UserId → Users</div><div>Level <i>SSC|HSC|Diploma|Bachelor|Master|PhD</i></div><div>Institution, Programme</div><div>Status <i>Studying | Finished</i></div><div>CurrentYear, ResultMonth</div><div>Result <i>"3.62 / 4.00"</i></div><div>IsMain <i>bit — cl.7 reads this</i></div></div>
+        <div class="ent new"><h4>DocumentTypes</h4><div class="k">Id</div><div>Code <i>unique, "NID"</i></div><div>Name</div><div>Category <i>Identity|Academic|Career|Other</i></div><div>IsIdentity <i>bit</i></div><div>Extensions, MaxBytes</div><div>IsActive, SortOrder</div></div>
+        <div class="ent new"><h4>UserDocuments</h4><div class="k">Id</div><div class="k">UserId → Users</div><div class="k">DocumentTypeId → DocumentTypes</div><div>Version, IsCurrent</div><div>FileName, StoredName, ContentType, SizeBytes</div><div>Status <i>Submitted|Verified|Rejected</i></div><div>ReviewNote, ReviewedAt, ReviewedById</div><div>CreatedAt</div></div>
+        <div class="ent new"><h4>ModuleDocumentRequirements</h4><div class="k">Id</div><div>Module <i>"internship" | "training" | …</i></div><div>GroupKey <i>same key = any one of</i></div><div class="k">DocumentTypeId → DocumentTypes</div><div>IsRequired</div><div>Condition <i>null | "studying" | "finished"</i></div><div>Note</div></div>
+        <div class="ent"><h4>InternshipApplications (existing)</h4><div class="k">Id</div><div class="k">StudentId → Users</div><div>BatchId, Status …</div></div>
+        <div class="ent new"><h4>ApplicationDocuments</h4><div class="k">Module + ApplicationId</div><div class="k">UserDocumentId → UserDocuments</div><div>AttachedAt</div><div><i>the exact version sent; it cannot be deleted while the application is live</i></div></div>
+        <div class="ent mod"><h4>StudentProfiles (retire)</h4><div>University, Programme, Level, CurrentYear, GraduationMonth</div><div><i>copied into Educations (IsMain = 1), then removed</i></div></div>
+      </div>
+      <div class="card small" style="margin-top:14px">
+        <b>Relations:</b> Users 1—1 PersonalProfiles · Users 1—* Educations · Users 1—* UserDocuments *—1 DocumentTypes · DocumentTypes 1—* ModuleDocumentRequirements · (module application) 1—* ApplicationDocuments *—1 UserDocuments.<br>
+        <b>Files</b> live in a private folder, not served as static files; only <code>GET /api/v1/documents/{id}/file</code> (owner or reviewer) returns them.
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="modal-bg" id="upModal"><div class="modal">
+  <h2>Upload a document</h2>
+  <div class="grid">
+    <div><label class="f">Document type</label><select id="upType"></select><div class="hint" id="upHint"></div></div>
+    <div><label class="f">File</label><input type="file" id="upFile" accept=".pdf,.jpg,.jpeg,.png"><div class="hint">PDF, JPG or PNG, up to 5 MB.</div></div>
+    <div class="row" style="justify-content:flex-end"><button class="btn" onclick="closeUpload()">Cancel</button><button class="btn primary" onclick="doUpload()">Upload</button></div>
+  </div>
+</div></div>
+
+<script>
+const SCREENS = [
+  ["s-profile", "1 · My profile", "student"], ["s-docs", "2 · My documents", "student"], ["s-intern", "3 · Internship apply", "student"],
+  ["s-training", "4 · Skill Training enrol", "student"], ["s-review", "5 · Admin: review", "admin"], ["s-settings", "6 · Admin: settings", "admin"],
+  ["s-model", "7 · Data model", "any"],
+];
+const TYPES = [
+  { code:"PHOTO", name:"Passport-size photo", cat:"Identity", ext:"JPG, PNG", max:2 },
+  { code:"NID", name:"National ID card", cat:"Identity", ext:"PDF, JPG, PNG", max:5, id:true },
+  { code:"BIRTH", name:"Birth registration", cat:"Identity", ext:"PDF, JPG, PNG", max:5, id:true },
+  { code:"PASSPORT", name:"Passport", cat:"Identity", ext:"PDF, JPG, PNG", max:5, id:true },
+  { code:"SSC", name:"SSC certificate", cat:"Academic", ext:"PDF, JPG, PNG", max:5 },
+  { code:"HSC", name:"HSC certificate", cat:"Academic", ext:"PDF, JPG, PNG", max:5 },
+  { code:"TRANSCRIPT", name:"Latest transcript / mark sheet", cat:"Academic", ext:"PDF, JPG, PNG", max:5 },
+  { code:"STUDENTSHIP", name:"Studentship certificate", cat:"Academic", ext:"PDF, JPG, PNG", max:5 },
+  { code:"DEGREE", name:"Degree certificate", cat:"Academic", ext:"PDF, JPG, PNG", max:5 },
+  { code:"CV", name:"CV / résumé", cat:"Career", ext:"PDF", max:5 },
+  { code:"RECO", name:"Recommendation letter", cat:"Career", ext:"PDF", max:5 },
+  { code:"TRAINING", name:"Training certificate", cat:"Career", ext:"PDF, JPG, PNG", max:5 },
+  { code:"OTHER", name:"Other", cat:"Other", ext:"PDF, JPG, PNG", max:5 },
+];
+const T = Object.fromEntries(TYPES.map(t => [t.code, t]));
+// Requirements per module. "any" = one of these types is enough.
+const REQ = {
+  internship: [
+    { any:["PHOTO"], req:true }, { any:["NID","BIRTH","PASSPORT"], req:true, note:"Any one" }, { any:["CV"], req:true },
+    { any:["TRANSCRIPT"], req:true }, { any:["STUDENTSHIP"], req:true, when:"studying", note:"Issued in the last 3 months" },
+    { any:["DEGREE"], req:true, when:"graduated" }, { any:["RECO"], req:false, note:"From your department head" },
+  ],
+  training: [
+    { any:["PHOTO"], req:true }, { any:["NID","BIRTH","PASSPORT"], req:true, note:"Any one" },
+    { any:["HSC","DEGREE"], req:true, note:"HSC or higher" }, { any:["CV"], req:false },
+  ],
+};
+const MODULE_NAME = { internship:"UGC Internship", training:"Skill Training" };
+
+const state = {
+  screen:"s-profile", eduStatus:"studying", needVerified:false, preview:null,
+  docs: [
+    { id:1, type:"PHOTO", file:"karim-photo.jpg", size:"240 KB", ver:1, status:"Verified", date:"20 Nov 2026" },
+    { id:2, type:"NID", file:"nid-front-back.pdf", size:"1.1 MB", ver:1, status:"Submitted", date:"20 Nov 2026" },
+    { id:3, type:"CV", file:"Karim_Hasan_CV.pdf", size:"310 KB", ver:2, status:"Submitted", date:"22 Nov 2026", older:1, usedIn:"Application #8 (rejected, 2026 B2)" },
+    { id:4, type:"HSC", file:"hsc-certificate.pdf", size:"820 KB", ver:1, status:"Rejected", date:"21 Nov 2026", note:"Scan is cut off at the bottom. Upload the full page." },
+  ],
+  edu: [
+    { level:"Bachelor", inst:"University of Dhaka", prog:"BSc in Computer Science and Engineering", main:true },
+    { level:"HSC", inst:"Notre Dame College", prog:"Science · GPA 5.00", year:"2020" },
+    { level:"SSC", inst:"Motijheel Govt. Boys' High School", prog:"Science · GPA 5.00", year:"2018" },
+  ],
+  nextId:10,
+};
+
+const $ = (id) => document.getElementById(id);
+const current = (code) => state.docs.find(d => d.type === code);
+const badge = (s) => `<span class="badge ${{Verified:"green",Submitted:"amber",Rejected:"red"}[s]||""}">${s === "Submitted" ? "Waiting for review" : s}</span>`;
+const neededBy = (code) => Object.entries(REQ).filter(([, rs]) => rs.some(r => r.any.includes(code) && (!r.when || r.when === state.eduStatus))).map(([m]) => MODULE_NAME[m]);
+const identityVerified = () => state.docs.some(d => T[d.type].id && d.status === "Verified");
+
+function proto() {
+  $("proto").innerHTML = SCREENS.map(([id, label]) => `<button class="${id===state.screen?"on":""}" onclick="go('${id}')">${label}</button>`).join("");
+}
+function sidenav() {
+  const admin = SCREENS.find(s => s[0] === state.screen)[2] === "admin";
+  $("who").innerHTML = admin ? `<b>Farhana Akter</b>Admin` : `<b>Karim Hasan</b>Student`;
+  const link = (id, label, pill) => `<a class="${state.screen===id?"on":""}" onclick="${id ? `go('${id}')` : ""}">${label}${pill ? `<span class="pill">${pill}</span>` : ""}</a>`;
+  const docsMissing = missing("internship").length;
+  $("sidenav").innerHTML = admin
+    ? `<h6>Administration</h6>${link("", "Overview")}${link("s-review", "Users")}${link("s-settings", "Document settings")}
+       <h6>Programmes</h6>${link("", "UGC Internship")}${link("", "Skill Training", "soon")}<h6>System</h6>${link("s-model", "Data model")}`
+    : `<h6>My account</h6>${link("s-profile", "My profile")}${link("s-docs", "My documents", docsMissing ? docsMissing + " missing" : "")}${link("", "Notifications", "2")}
+       <h6>Programmes</h6>${link("s-intern", "UGC Internship")}${link("s-training", "Skill Training", "new")}${link("", "Jobs", "soon")}`;
+}
+function go(id) { state.screen = id; document.querySelectorAll(".screen").forEach(s => s.classList.toggle("on", s.id === id)); renderAll(); window.scrollTo(0, 0); }
+
+// ---------- profile ----------
+function renderProfile() {
+  const v = identityVerified();
+  $("identityBox").innerHTML = `<p>${v ? '<span class="badge green">Verified</span>' : '<span class="badge amber">Not verified</span>'}</p>
+    <p class="small muted">${v ? "Verified from your identity document. Every programme accepts it." : "Upload your NID, birth registration or passport in <a href='#' onclick=\"go('s-docs')\">My documents</a>. The administrator verifies it once, for every programme."}</p>`;
+  $("eduList").innerHTML = state.edu.map((e, i) => `<div class="edu ${e.main?"main":""}"><div><b>${e.level}</b> · ${e.inst}${e.main?' <span class="badge green">Main</span>':""}
+    <div class="small muted">${e.prog}${e.main ? (state.eduStatus === "studying" ? " · Studying, year 4 · expected Jun 2027" : " · Finished · result May 2026 · CGPA 3.62") : e.year ? " · passed " + e.year : ""}</div></div>
+    <div class="row"><button class="btn sm">Edit</button>${e.main?"":`<button class="btn sm" onclick="setMain(${i})">Make main</button>`}</div></div>`).join("");
+  const pct = 60 + (identityVerified() ? 20 : 0) + (missing("internship").length ? 0 : 20);
+  $("completeness").innerHTML = `<span class="small muted">Profile</span><b>${pct}%</b><span class="badge ${pct===100?"green":"amber"}">${pct===100?"Complete":"Incomplete"}</span>`;
+}
+function setMain(i) { state.edu.forEach((e, j) => e.main = i === j); renderAll(); }
+function addEdu() { state.edu.push({ level:"Diploma", inst:"New institution", prog:"Edit to fill in" }); renderAll(); }
+
+// ---------- documents ----------
+function renderDocs() {
+  const filter = $("docFilter").value;
+  const counts = { have: state.docs.filter(d => d.status !== "Rejected").length, verified: state.docs.filter(d => d.status === "Verified").length, fix: state.docs.filter(d => d.status === "Rejected").length };
+  $("docStats").innerHTML = `<div class="stat"><span class="muted small">Uploaded</span><b>${counts.have}</b></div>
+    <div class="stat"><span class="muted small">Verified</span><b>${counts.verified}</b></div><div class="stat"><span class="muted small">Needs a new file</span><b>${counts.fix}</b></div>`;
+  const cats = ["Identity","Academic","Career","Other"];
+  $("docList").innerHTML = cats.map(cat => {
+    let types = TYPES.filter(t => t.cat === cat);
+    if (filter) types = types.filter(t => REQ[filter].some(r => r.any.includes(t.code) && (!r.when || r.when === state.eduStatus)));
+    if (!types.length) return "";
+    return `<div class="cat"><h3>${cat}</h3>${types.map(t => {
+      const d = current(t.code); const need = neededBy(t.code);
+      return `<div class="doc ${d?"has":""}"><div class="ic">${t.code.slice(0,3)}</div>
+        <div><b>${t.name}</b> ${d ? badge(d.status) : ""}
+          <div class="meta">${d ? `${d.file} · ${d.size} · v${d.ver} · ${d.date}` : "Not uploaded"}${d?.older ? ` · <span class="used">v${d.older} kept: used in ${d.usedIn}</span>` : ""}</div>
+          ${d?.note ? `<div class="small" style="color:var(--red)">Reviewer: ${d.note}</div>` : ""}
+          ${need.length ? `<div class="used">Needed by: ${need.join(", ")}</div>` : ""}</div>
+        <div class="row">${d ? `<button class="btn sm" onclick="openUpload('${t.code}')">Replace</button><button class="btn sm">View</button>` : `<button class="btn sm primary" onclick="openUpload('${t.code}')">Upload</button>`}</div></div>`;
+    }).join("")}</div>`;
+  }).join("");
+}
+function openUpload(code) {
+  $("upType").innerHTML = TYPES.map(t => `<option value="${t.code}" ${t.code===code?"selected":""}>${t.cat} · ${t.name}</option>`).join("");
+  const upd = () => { const c = $("upType").value; const d = current(c); $("upHint").textContent = d ? `Replaces v${d.ver} (${d.file}). The old version is kept only if an application used it.` : ""; };
+  $("upType").onchange = upd; upd(); $("upFile").value = ""; $("upModal").classList.add("on");
+}
+function closeUpload() { $("upModal").classList.remove("on"); }
+function doUpload() {
+  const code = $("upType").value; const f = $("upFile").files[0];
+  const name = f ? f.name : `${code.toLowerCase()}.pdf`; const size = f ? Math.max(1, Math.round(f.size / 1024)) + " KB" : "500 KB";
+  const d = current(code);
+  if (d) Object.assign(d, { file:name, size, ver:d.ver + 1, status:"Submitted", note:null, date:"25 Nov 2026" });
+  else state.docs.push({ id:state.nextId++, type:code, file:name, size, ver:1, status:"Submitted", date:"25 Nov 2026" });
+  closeUpload(); renderAll();
+}
+
+// ---------- module checklists ----------
+function rowsFor(module) { return REQ[module].filter(r => !r.when || r.when === state.eduStatus); }
+function statusOf(r) {
+  const docs = r.any.map(current).filter(Boolean).filter(d => d.status !== "Rejected");
+  const ok = docs.find(d => d.status === "Verified") || (!state.needVerified && docs[0]);
+  if (ok) return { mark:"ok", sym:"✓", doc:ok };
+  if (docs[0]) return { mark:"wait", sym:"…", doc:docs[0] };
+  return { mark: r.req ? "no" : "opt", sym: r.req ? "✕" : "○" };
+}
+function missing(module) { return rowsFor(module).filter(r => r.req && statusOf(r).mark !== "ok"); }
+function checklist(module) {
+  return rowsFor(module).map(r => {
+    const s = statusOf(r); const names = r.any.map(c => T[c].name).join(" / ");
+    const right = s.doc ? `${badge(s.doc.status)}` : `<button class="btn sm ${r.req?"primary":""}" onclick="go('s-docs'); openUpload('${r.any[0]}')">Upload</button>`;
+    return `<div class="check"><span class="${s.mark}">${s.sym}</span><div><b>${names}</b> ${r.req ? "" : '<span class="badge">Optional</span>'}
+      <div class="small muted">${s.doc ? `${s.doc.file} · v${s.doc.ver}` : r.note || ""}${s.doc && r.note ? " · " + r.note : ""}</div></div>${right}</div>`;
+  }).join("");
+}
+function submitBox(module, label) {
+  const miss = missing(module);
+  const msg = miss.length
+    ? `<p class="small" style="color:var(--red)">Missing or not ready: ${miss.map(r => r.any.map(c => T[c].name).join(" / ")).join(", ")}.</p>`
+    : `<p class="small" style="color:var(--brand)">All required documents are ready. They will be attached as they are now.</p>`;
+  return `${msg}${state.needVerified ? '<p class="small muted">Setting: only verified documents count.</p>' : '<p class="small muted">Setting: uploaded documents count; reviewers verify them later.</p>'}
+    <button class="btn primary" ${miss.length ? "disabled" : ""}>${label}</button>`;
+}
+function renderModules() {
+  $("eduStatus").value = state.eduStatus;
+  $("internCheck").innerHTML = checklist("internship");
+  $("internSubmit").innerHTML = submitBox("internship", "Submit application");
+  const idv = identityVerified();
+  $("internElig").innerHTML = `<div class="check"><span class="ok">✓</span><div>${state.eduStatus === "studying" ? "4th-year undergraduate (cl.7 ক)" : "Finished within 12 months (cl.7 খ)"}<div class="muted">From the Main education row</div></div><span></span></div>
+    <div class="check"><span class="${idv?"ok":"no"}">${idv?"✓":"✕"}</span><div>Identity verified<div class="muted">${idv?"From your verified identity document":"Waiting for the administrator to verify your NID"}</div></div><span></span></div>
+    <div class="check"><span class="ok">✓</span><div>No other live application</div><span></span></div>`;
+  $("trainCheck").innerHTML = checklist("training");
+  $("trainSubmit").innerHTML = submitBox("training", "Enrol");
+}
+
+// ---------- admin ----------
+function renderReview() {
+  $("adminIdentity").innerHTML = identityVerified() ? '<span class="badge green">Identity verified</span>' : '<span class="badge amber">Identity not verified</span>';
+  $("reviewRows").innerHTML = state.docs.map(d => `<tr class="${state.preview===d.id?"sel":""}" style="cursor:pointer" onclick="state.preview=${d.id}; renderAll()">
+    <td><b>${T[d.type].name}</b><div class="small muted">${T[d.type].cat}</div></td><td class="small">${d.file}<div class="muted">v${d.ver} · ${d.date}</div></td><td>${badge(d.status)}</td><td>›</td></tr>`).join("");
+  const d = state.docs.find(x => x.id === state.preview);
+  $("pvTitle").textContent = d ? T[d.type].name : "Preview";
+  $("pvBox").textContent = d ? `${d.file} (preview)` : "Select a document";
+  $("pvActions").innerHTML = d ? `<label class="f">Note (needed to reject)</label><textarea id="rvNote" rows="2">${d.note||""}</textarea>
+    <div class="row" style="margin-top:8px"><button class="btn primary sm" onclick="review(${d.id},'Verified')">Verify</button><button class="btn danger sm" onclick="review(${d.id},'Rejected')">Reject</button></div>
+    ${T[d.type].id ? '<p class="small muted">Verifying an identity document also marks the account Identity verified.</p>' : ""}` : "";
+}
+function review(id, status) {
+  const d = state.docs.find(x => x.id === id); const note = $("rvNote").value.trim();
+  if (status === "Rejected" && !note) { alert("Write why it is rejected."); return; }
+  d.status = status; d.note = status === "Rejected" ? note : null; renderAll();
+}
+function renderSettings() {
+  $("needVerified").checked = state.needVerified;
+  $("typeRows").innerHTML = TYPES.map(t => `<tr><td><code>${t.code}</code></td><td>${t.name}${t.id ? ' <span class="badge blue">Identity</span>' : ""}</td><td>${t.cat}</td><td class="small">${t.ext}</td><td>${t.max} MB</td><td><input type="checkbox" checked></td></tr>`).join("");
+  const m = $("reqModule").value;
+  $("reqRows").innerHTML = REQ[m].map(r => `<tr><td>${r.any.map(c => T[c].name).join(" <i class='muted'>or</i> ")}</td><td>${r.req ? '<span class="badge green">Required</span>' : '<span class="badge">Optional</span>'}</td>
+    <td class="small">${r.when === "studying" ? "Main education: studying" : r.when === "graduated" ? "Main education: finished" : "Always"}</td><td class="small muted">${r.note || ""}</td></tr>`).join("");
+}
+
+function wireTabs(containerId, attr) {
+  $(containerId).querySelectorAll("button").forEach(b => b.onclick = () => {
+    $(containerId).querySelectorAll("button").forEach(x => x.classList.toggle("on", x === b));
+    document.querySelectorAll(`[${attr}]`).forEach(p => p.hidden = p.getAttribute(attr) !== b.dataset.t);
+  });
+}
+function renderAll() { proto(); sidenav(); renderProfile(); renderDocs(); renderModules(); renderReview(); renderSettings(); }
+wireTabs("ptabs", "data-p"); wireTabs("stabs", "data-st");
+go("s-profile");
+</script>
+</body>
+</html>

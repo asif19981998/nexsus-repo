@@ -1,0 +1,624 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  /* Brand palette
+     #3368A0 primary · #66A3BF secondary · #C8DFDB sage
+     #FFFFFF body · #F9F8F6 navbar/footer */
+  --color-nexus-50: #f5f8f7;
+  --color-nexus-100: #c8dfdb;
+  --color-nexus-200: #a9cfd0;
+  --color-nexus-300: #8abbc8;
+  --color-nexus-400: #66a3bf;
+  --color-nexus-500: #4c86b0;
+  --color-nexus-600: #3368a0;
+  --color-nexus-700: #2a5685;
+  --color-nexus-800: #22456b;
+  --color-nexus-900: #1a3552;
+  --color-nexus-950: #122438;
+
+  --color-cream: #ffffff;
+  --color-chrome: #f9f8f6;
+  --color-sage: #c8dfdb;
+  --color-sky: #66a3bf;
+  --color-ocean: #3368a0;
+
+  --color-institutional: #3368a0;
+  --color-institutional-dark: #2a5685;
+  --color-ugc: #4c5f8a;
+  --color-ugc-dark: #36456a;
+  --color-opportunity: #b8893d;
+  --color-opportunity-dark: #946e2f;
+  --color-success: #3d7a68;
+  --color-danger: #b91c1c;
+  --color-info: #66a3bf;
+
+  --color-status-draft: #64748b;
+  --color-status-submitted: #3368a0;
+  --color-status-review: #b8893d;
+  --color-status-approved: #3d7a68;
+  --color-status-shortlisted: #66a3bf;
+  --color-status-offered: #4c5f8a;
+  --color-status-rejected: #b91c1c;
+  --color-status-withdrawn: #64748b;
+  --color-status-disputed: #c26a3a;
+  --color-status-completed: #3d7a68;
+  --color-status-expired: #94a3b8;
+
+  --font-sans: var(--font-plus-jakarta), "Plus Jakarta Sans", "Noto Sans Bengali", "Hind Siliguri", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  --radius-card: 0.875rem;
+}
+
+:root {
+  --background: #ffffff;
+  --foreground: #1a3552;
+  --card: #ffffff;
+  --card-foreground: #1a3552;
+  --muted: #c8dfdb;
+  --muted-foreground: #2a5685;
+  --border: #d5e3df;
+  --ring: #3368a0;
+  --chrome: #f9f8f6;
+}
+
+.dark {
+  --background: #122438;
+  --foreground: #f2efe7;
+  --card: #1a3552;
+  --card-foreground: #f2efe7;
+  --muted: #22456b;
+  --muted-foreground: #a9cfd0;
+  --border: #2a5685;
+  --ring: #66a3bf;
+  --chrome: #1a3552;
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+
+  html {
+    scroll-behavior: smooth;
+    /* Anchor jumps land below the sticky header instead of under it. */
+    scroll-padding-top: 5rem;
+    scrollbar-color: rgba(51, 104, 160, 0.35) transparent;
+    scrollbar-width: thin;
+  }
+
+  ::selection {
+    background: rgba(102, 163, 191, 0.3);
+  }
+
+  /* Gentle default motion for every interactive element; Tailwind transition utilities still override it. */
+  a,
+  button,
+  [role="button"],
+  [role="tab"],
+  [role="option"],
+  [role="menuitem"],
+  input,
+  select,
+  textarea,
+  summary {
+    transition-property: color, background-color, border-color, outline-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, translate, scale;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 180ms;
+  }
+
+  tbody tr {
+    transition: background-color 160ms ease;
+  }
+
+  img {
+    transition: opacity 300ms ease, transform 400ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+
+  body {
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    @apply antialiased;
+  }
+
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-nexus-600;
+  }
+
+  button:not(:disabled),
+  [type="button"]:not(:disabled),
+  [type="submit"]:not(:disabled),
+  [type="reset"]:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  a[href],
+  label[for],
+  select:not(:disabled),
+  summary {
+    cursor: pointer;
+  }
+}
+
+@layer utilities {
+  .page-container {
+    @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
+  }
+
+  .card-surface {
+    @apply rounded-2xl border border-[#d5e3df] bg-cream shadow-[0_1px_2px_rgba(51,104,160,0.05),0_4px_14px_rgba(51,104,160,0.04)] transition-all duration-200 dark:border-nexus-800 dark:bg-nexus-900 dark:shadow-[0_1px_2px_rgba(0,0,0,0.25)];
+  }
+
+  .card-interactive {
+    @apply rounded-2xl border border-[#d5e3df] bg-cream shadow-[0_1px_2px_rgba(51,104,160,0.05),0_4px_14px_rgba(51,104,160,0.04)] transition-all duration-200 hover:-translate-y-0.5 hover:border-nexus-400 hover:shadow-[0_8px_24px_rgba(51,104,160,0.12),0_2px_8px_rgba(51,104,160,0.06)] dark:border-nexus-800 dark:bg-nexus-900 dark:shadow-[0_1px_2px_rgba(0,0,0,0.25)] dark:hover:border-nexus-500 dark:hover:shadow-[0_8px_24px_rgba(0,0,0,0.35)];
+  }
+
+  .text-secondary {
+    @apply text-nexus-700/70 dark:text-nexus-200/70;
+  }
+
+  /* Subtle lift for any clickable block that is not a .card-interactive. */
+  .hover-lift {
+    @apply transition-[transform,translate,box-shadow,border-color] duration-200 ease-out hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(51,104,160,0.12)];
+  }
+
+  /* Underline that grows from the left on hover, and stays under the active link. */
+  .nav-underline {
+    position: relative;
+  }
+
+  .nav-underline::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -0.35rem;
+    height: 2px;
+    border-radius: 9999px;
+    background: currentColor;
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 260ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .nav-underline:hover::after,
+  .nav-underline[aria-current="page"]::after {
+    transform: scaleX(1);
+  }
+}
+
+/* ---------- Motion: entrances, scroll reveal, popovers ---------- */
+
+/* Set by MotionEffects only on elements that start below the fold, so nothing visible ever blinks. */
+.reveal-pending {
+  opacity: 0;
+  transform: translateY(18px);
+}
+
+.reveal-in {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity 600ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 600ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.motion-fade {
+  animation: motion-fade 200ms ease-out both;
+}
+
+.motion-pop {
+  animation: motion-pop 180ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  transform-origin: top;
+}
+
+.motion-dialog {
+  animation: motion-dialog 260ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.motion-slide-right {
+  animation: motion-slide-right 300ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.motion-slide-left {
+  animation: motion-slide-left 300ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.motion-panel {
+  animation: motion-panel 260ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Sticky headers get a soft shadow once the page has scrolled. */
+header.sticky {
+  transition: box-shadow 250ms ease, background-color 250ms ease;
+}
+
+html[data-scrolled] header.sticky {
+  box-shadow: 0 6px 20px -12px rgba(26, 53, 82, 0.35);
+}
+
+.dark[data-scrolled] header.sticky {
+  box-shadow: 0 6px 20px -10px rgba(0, 0, 0, 0.6);
+}
+
+@keyframes motion-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes motion-pop {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes motion-dialog {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes motion-slide-right {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: none;
+  }
+}
+
+@keyframes motion-slide-left {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: none;
+  }
+}
+
+@keyframes motion-panel {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal-pending {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Sonner toast — branded card */
+[data-sonner-toaster] {
+  font-family: var(--font-sans) !important;
+  --toast-close-button-start: unset !important;
+  --toast-close-button-end: 0.7rem !important;
+  --toast-close-button-transform: none !important;
+}
+
+[data-sonner-toast].nexus-toast,
+[data-sonner-toast][data-styled='true'] {
+  width: min(22.5rem, calc(100vw - 2rem)) !important;
+  align-items: flex-start !important;
+  gap: 0.75rem !important;
+  padding: 0.9rem 2.25rem 0.9rem 0.95rem !important;
+  border-radius: 1rem !important;
+  border: 1px solid #d5e3df !important;
+  background: #ffffff !important;
+  color: #1a3552 !important;
+  box-shadow:
+    0 1px 2px rgba(51, 104, 160, 0.05),
+    0 10px 28px rgba(51, 104, 160, 0.1) !important;
+  font-family: var(--font-sans) !important;
+}
+
+[data-sonner-toast].nexus-toast-success {
+  background: #f4faf7 !important;
+  border-color: #c5ddd3 !important;
+}
+
+[data-sonner-toast].nexus-toast-error {
+  background: #fdf6f6 !important;
+  border-color: #efd0d0 !important;
+}
+
+[data-sonner-toast].nexus-toast-info {
+  background: #f5f8fb !important;
+  border-color: #d5e3df !important;
+}
+
+[data-sonner-toast].nexus-toast-warning {
+  background: #fbf7f0 !important;
+  border-color: #ead9b8 !important;
+}
+
+[data-sonner-toast] [data-icon] {
+  margin-top: 0.1rem !important;
+  width: 1.35rem !important;
+  height: 1.35rem !important;
+}
+
+[data-sonner-toast].nexus-toast-success [data-icon] {
+  color: #3d7a68 !important;
+}
+
+[data-sonner-toast].nexus-toast-error [data-icon] {
+  color: #b91c1c !important;
+}
+
+[data-sonner-toast].nexus-toast-info [data-icon] {
+  color: #3368a0 !important;
+}
+
+[data-sonner-toast].nexus-toast-warning [data-icon] {
+  color: #946e2f !important;
+}
+
+[data-sonner-toast] [data-content] {
+  gap: 0.15rem !important;
+}
+
+[data-sonner-toast] [data-title],
+.nexus-toast-title {
+  font-family: var(--font-sans) !important;
+  font-size: 0.875rem !important;
+  font-weight: 600 !important;
+  line-height: 1.35 !important;
+  letter-spacing: -0.01em !important;
+  color: #1a3552 !important;
+}
+
+[data-sonner-toast] [data-description],
+.nexus-toast-description {
+  font-family: var(--font-sans) !important;
+  font-size: 0.75rem !important;
+  line-height: 1.45 !important;
+  color: rgba(42, 86, 133, 0.72) !important;
+}
+
+[data-sonner-toast][data-styled='true'] [data-close-button].nexus-toast-close,
+[data-sonner-toast][data-styled='true'] [data-close-button] {
+  left: auto !important;
+  right: 0.55rem !important;
+  top: 0.55rem !important;
+  transform: none !important;
+  width: 1.35rem !important;
+  height: 1.35rem !important;
+  border: none !important;
+  background: transparent !important;
+  color: #2a5685 !important;
+  opacity: 0.55;
+}
+
+[data-sonner-toast][data-styled='true'] [data-close-button]:hover {
+  opacity: 1;
+  background: rgba(51, 104, 160, 0.08) !important;
+}
+
+.dark [data-sonner-toast].nexus-toast,
+.dark [data-sonner-toast][data-styled='true'] {
+  background: #1a3552 !important;
+  border-color: #2a5685 !important;
+  color: #f2efe7 !important;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35) !important;
+}
+
+.dark [data-sonner-toast].nexus-toast-success {
+  background: #17362e !important;
+  border-color: #2f5d50 !important;
+}
+
+.dark [data-sonner-toast].nexus-toast-error {
+  background: #3a1c1c !important;
+  border-color: #6b2a2a !important;
+}
+
+.dark [data-sonner-toast] [data-title],
+.dark .nexus-toast-title {
+  color: #f2efe7 !important;
+}
+
+.dark [data-sonner-toast] [data-description],
+.dark .nexus-toast-description {
+  color: rgba(200, 223, 219, 0.72) !important;
+}
+
+.dark [data-sonner-toast][data-styled='true'] [data-close-button] {
+  color: #c8dfdb !important;
+}
+
+/* Luxury loader */
+.lux-spin {
+  animation: lux-spin 1.35s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+  transform-origin: 50% 50%;
+}
+
+.lux-spin-rev {
+  animation: lux-spin-rev 2.4s linear infinite;
+  transform-origin: 50% 50%;
+}
+
+.lux-breathe {
+  animation: lux-breathe 2.8s ease-in-out infinite;
+}
+
+.lux-glow {
+  animation: lux-glow 2.8s ease-in-out infinite;
+}
+
+.lux-shimmer {
+  animation: lux-shimmer 1.6s ease-in-out infinite;
+}
+
+.lux-rise {
+  animation: lux-rise 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.lux-overlay {
+  animation: lux-overlay-in 0.35s ease-out both;
+}
+
+.lux-overlay-exit {
+  animation: lux-overlay-out 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  pointer-events: none;
+}
+
+.lux-progress {
+  pointer-events: none;
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: 100;
+  height: 2px;
+  overflow: hidden;
+  opacity: 0;
+}
+
+.lux-progress span {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: linear-gradient(90deg, #3368a0 0%, #d4bc7d 55%, #b8893d 100%);
+  box-shadow: 0 0 12px rgba(212, 188, 125, 0.55);
+}
+
+.lux-progress-active {
+  opacity: 1;
+}
+
+.lux-progress-active span {
+  animation: lux-bar 0.72s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes lux-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes lux-spin-rev {
+  to {
+    transform: rotate(-360deg);
+  }
+}
+
+@keyframes lux-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.045);
+  }
+}
+
+@keyframes lux-glow {
+  0%,
+  100% {
+    opacity: 0.45;
+    transform: scale(0.92);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.08);
+  }
+}
+
+@keyframes lux-shimmer {
+  0% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(280%);
+  }
+}
+
+@keyframes lux-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes lux-overlay-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes lux-overlay-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes lux-bar {
+  0% {
+    width: 0;
+  }
+  35% {
+    width: 58%;
+  }
+  100% {
+    width: 100%;
+  }
+}
+
+/* Print only the payment slip: PaymentSlip adds .printing-slip to <body> around window.print(). */
+@media print {
+  body.printing-slip * {
+    visibility: hidden;
+  }
+  body.printing-slip .slip-print,
+  body.printing-slip .slip-print * {
+    visibility: visible;
+  }
+  body.printing-slip .slip-print {
+    position: absolute;
+    inset: 0 auto auto 0;
+    width: 100%;
+    color: #000;
+    background: #fff;
+  }
+}

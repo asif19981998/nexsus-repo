@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Prototype — Internship self sign-up and documents</title>
+<style>
+  :root { --bg:#f6f7f9; --card:#fff; --line:#e3e6eb; --text:#16202c; --muted:#5d6b7a; --brand:#0f6b4f; --brand-soft:#e7f4ef;
+          --amber:#9a6200; --amber-soft:#fff4dd; --red:#b42318; --red-soft:#fdecea; --blue:#1d4ed8; --blue-soft:#e8efff; }
+  * { box-sizing:border-box; }
+  body { margin:0; font:14px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background:var(--bg); color:var(--text); }
+  header.proto { position:sticky; top:0; z-index:5; background:#101826; color:#fff; padding:10px 20px; display:flex; gap:16px; align-items:center; flex-wrap:wrap; }
+  header.proto b { font-size:13px; letter-spacing:.02em; }
+  header.proto nav { display:flex; gap:6px; flex-wrap:wrap; }
+  header.proto button { background:#223047; color:#d6deea; border:0; border-radius:6px; padding:6px 10px; cursor:pointer; font-size:13px; }
+  header.proto button.on { background:#fff; color:#101826; font-weight:600; }
+  main { max-width:1180px; margin:0 auto; padding:24px 20px 60px; }
+  .screen { display:none; } .screen.on { display:block; }
+  .note { background:#fffbea; border:1px dashed #d9b84a; border-radius:8px; padding:10px 14px; margin-bottom:18px; font-size:13px; color:#5c4a00; }
+  .note b { color:#3d3100; }
+  h1 { font-size:22px; margin:0 0 4px; } h2 { font-size:16px; margin:0 0 10px; } h3 { font-size:14px; margin:0 0 6px; }
+  .muted { color:var(--muted); } .small { font-size:12px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:18px; }
+  .grid { display:grid; gap:14px; } .g2 { grid-template-columns:1fr 1fr; } .g3 { grid-template-columns:repeat(3,1fr); }
+  .row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; } .between { justify-content:space-between; }
+  label.f { display:block; font-size:12px; font-weight:600; color:#334; margin-bottom:4px; }
+  input[type=text], input[type=email], input[type=password], input[type=tel], input[type=month], input[type=date], select, textarea {
+    width:100%; padding:8px 10px; border:1px solid #cfd5dd; border-radius:8px; font:inherit; background:#fff; }
+  textarea { min-height:70px; }
+  .hint { font-size:12px; color:var(--muted); margin-top:3px; }
+  .btn { border:1px solid #cfd5dd; background:#fff; border-radius:8px; padding:8px 14px; cursor:pointer; font:inherit; font-weight:600; }
+  .btn.primary { background:var(--brand); border-color:var(--brand); color:#fff; }
+  .btn.danger { color:var(--red); border-color:#f1b8b2; }
+  .btn.sm { padding:4px 10px; font-size:12px; }
+  .btn:disabled { opacity:.45; cursor:not-allowed; }
+  .badge { display:inline-block; font-size:11px; font-weight:700; padding:2px 8px; border-radius:999px; background:#eef1f4; color:#3a4654; }
+  .badge.green { background:var(--brand-soft); color:var(--brand); } .badge.amber { background:var(--amber-soft); color:var(--amber); }
+  .badge.red { background:var(--red-soft); color:var(--red); } .badge.blue { background:var(--blue-soft); color:var(--blue); }
+  /* wizard */
+  .steps { display:flex; gap:0; margin:18px 0; }
+  .steps div { flex:1; text-align:center; font-size:12px; color:var(--muted); position:relative; padding-top:30px; }
+  .steps div::before { content:attr(data-n); position:absolute; top:0; left:50%; transform:translateX(-50%); width:24px; height:24px; border-radius:50%;
+    background:#e3e6eb; color:#556; font-weight:700; line-height:24px; }
+  .steps div.done::before { content:"✓"; background:var(--brand); color:#fff; } .steps div.cur { color:var(--text); font-weight:700; }
+  .steps div.cur::before { background:#101826; color:#fff; }
+  .wiz { display:grid; grid-template-columns:1fr 300px; gap:18px; align-items:start; }
+  .side { position:sticky; top:70px; }
+  .basis { display:grid; gap:10px; }
+  .basis label { display:flex; gap:10px; border:1px solid var(--line); border-radius:10px; padding:12px; cursor:pointer; }
+  .basis label.on { border-color:var(--brand); background:var(--brand-soft); }
+  .rule { display:flex; gap:8px; padding:6px 0; border-bottom:1px solid #f0f2f5; font-size:13px; } .rule:last-child { border:0; }
+  .ok { color:var(--brand); font-weight:700; } .no { color:var(--red); font-weight:700; } .wait { color:var(--muted); font-weight:700; }
+  .doc { display:grid; grid-template-columns:1fr auto; gap:10px; align-items:center; border:1px solid var(--line); border-radius:10px; padding:10px 12px; }
+  .doc.req { border-left:3px solid var(--brand); } .doc.opt { border-left:3px solid #c8ced6; }
+  .doc .file { font-size:12px; color:var(--brand); }
+  .drop { border:1px dashed #b9c1cc; border-radius:8px; padding:6px 12px; font-size:12px; color:var(--muted); cursor:pointer; background:#fafbfc; }
+  table { width:100%; border-collapse:collapse; } th, td { text-align:left; padding:9px 10px; border-bottom:1px solid var(--line); font-size:13px; vertical-align:top; }
+  th { font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); background:#fafbfc; }
+  tr.sel td { background:#f2f8f5; }
+  .stat { border:1px solid var(--line); border-radius:10px; padding:12px; background:#fff; } .stat b { font-size:22px; display:block; }
+  .timeline { border-left:2px solid var(--line); margin-left:8px; padding-left:16px; }
+  .timeline div { position:relative; padding-bottom:12px; } .timeline div::before { content:""; position:absolute; left:-22px; top:5px; width:10px; height:10px; border-radius:50%; background:var(--line); }
+  .timeline div.done::before { background:var(--brand); } .timeline div.cur::before { background:var(--amber); }
+  .center { max-width:620px; margin:30px auto; text-align:center; }
+  .toggle { display:inline-flex; border:1px solid var(--line); border-radius:8px; overflow:hidden; }
+  .toggle button { border:0; background:#fff; padding:6px 12px; cursor:pointer; font:inherit; font-size:12px; } .toggle button.on { background:#101826; color:#fff; }
+  .preview { height:150px; border-radius:8px; background:repeating-linear-gradient(45deg,#f1f3f6,#f1f3f6 10px,#e8ebef 10px,#e8ebef 20px); display:flex; align-items:center; justify-content:center; color:#778; font-size:12px; }
+  @media (max-width:900px) { .wiz, .g2, .g3 { grid-template-columns:1fr; } .side { position:static; } }
+</style>
+</head>
+<body>
+<header class="proto">
+  <b>PROTOTYPE · not wired to API</b>
+  <nav id="tabs">
+    <button data-s="s-signup" class="on">1 · Sign up</button>
+    <button data-s="s-done">2 · Submitted</button>
+    <button data-s="s-login">3 · Login (blocked)</button>
+    <button data-s="s-status">4 · My registration</button>
+    <button data-s="s-admin">5 · Admin: Registrations</button>
+    <button data-s="s-docs">6 · Documents page</button>
+  </nav>
+</header>
+
+<main>
+<!-- ===================== 1. SIGN UP ===================== -->
+<section class="screen on" id="s-signup">
+  <div class="note"><b>নোট:</b> ৪ ধাপের form। ধাপ ২-এ cl.7 অনুযায়ী যোগ্যতার ভিত্তি বেছে নিতে হয়, ডান পাশে সঙ্গে সঙ্গে যোগ্যতা যাচাই দেখায়। ধাপ ৩-এ শুধু সেই ভিত্তির দরকারি document চাওয়া হয়। কোনো email OTP নেই। Submit করলে account <b>Pending review</b> অবস্থায় তৈরি হয়।</div>
+  <h1>Create your UGC Internship account</h1>
+  <p class="muted">Fill in your details and upload your documents. The UGC administrator checks them before your account is activated.</p>
+
+  <div class="steps" id="steps">
+    <div data-n="1" class="cur">Account</div><div data-n="2">Academic &amp; eligibility</div><div data-n="3">Documents</div><div data-n="4">Review &amp; submit</div>
+  </div>
+
+  <div class="wiz">
+    <div class="card">
+      <!-- step 1 -->
+      <div class="step" data-step="1">
+        <h2>Account &amp; identity</h2>
+        <div class="grid g2">
+          <div><label class="f">Full name (as on certificate)</label><input type="text" value="Nusrat Jahan" /></div>
+          <div><label class="f">Email (used to sign in)</label><input type="email" value="nusrat.jahan@example.com" /></div>
+          <div><label class="f">Mobile</label><input type="tel" value="01711-000000" /></div>
+          <div><label class="f">Date of birth</label><input type="date" value="2002-05-14" /></div>
+          <div><label class="f">ID type</label><select><option>National ID (NID)</option><option>Birth registration</option><option>Passport (foreign degree)</option></select></div>
+          <div><label class="f">ID number</label><input type="text" value="1995 2xx xxx xxx" /><div class="hint">Used to stop duplicate accounts.</div></div>
+          <div><label class="f">Password</label><input type="password" value="secret123" /><div class="hint">At least 8 characters, one number.</div></div>
+          <div><label class="f">Confirm password</label><input type="password" value="secret123" /></div>
+        </div>
+      </div>
+
+      <!-- step 2 -->
+      <div class="step" data-step="2" hidden>
+        <h2>Which describes you? <span class="muted small">(cl.7)</span></h2>
+        <div class="basis" id="basis">
+          <label data-b="enrolled" class="on"><input type="radio" name="b" checked /> <span><b>(a) Currently studying</b><br /><span class="small muted">4th-year undergraduate, or a master's / postgraduate student</span></span></label>
+          <label data-b="graduate"><input type="radio" name="b" /> <span><b>(b) Recently graduated</b><br /><span class="small muted">Finished a bachelor's or master's in Bangladesh within the last 12 months</span></span></label>
+          <label data-b="foreign"><input type="radio" name="b" /> <span><b>(c) Foreign degree</b><br /><span class="small muted">Equivalent foreign degree finished within the last 12 months</span></span></label>
+        </div>
+        <hr style="border:0;border-top:1px solid var(--line);margin:16px 0" />
+        <div class="grid g2">
+          <div><label class="f">University</label><select><option>University of Dhaka</option><option>BUET</option><option>Other…</option></select><div class="hint">List from UGC's university table; "Other" for foreign.</div></div>
+          <div><label class="f">Programme / subject</label><input type="text" value="BSc in Computer Science and Engineering" /></div>
+          <div><label class="f">Level</label><select id="level"><option>Undergraduate</option><option>Postgraduate</option></select></div>
+          <div class="b-enrolled"><label class="f">Current year</label><select id="year"><option>1st</option><option>2nd</option><option>3rd</option><option selected>4th</option><option>5th</option></select></div>
+          <div class="b-enrolled"><label class="f">Student ID / roll</label><input type="text" value="CSE-2019-0412" /></div>
+          <div class="b-enrolled"><label class="f">Expected graduation</label><input type="month" value="2027-06" /></div>
+          <div class="b-graduate b-foreign" hidden><label class="f">Result published (graduation month)</label><input type="month" id="grad" value="2026-03" /><div class="hint">Must be within the last 12 months.</div></div>
+          <div class="b-graduate b-foreign" hidden><label class="f">CGPA / class</label><input type="text" value="3.62 / 4.00" /></div>
+          <div class="b-foreign" hidden><label class="f">Country</label><input type="text" value="Malaysia" /></div>
+        </div>
+      </div>
+
+      <!-- step 3 -->
+      <div class="step" data-step="3" hidden>
+        <h2>Documents <span class="muted small">PDF, JPG or PNG · max 5 MB each</span></h2>
+        <p class="small muted" id="docIntro"></p>
+        <div class="grid" id="docList"></div>
+      </div>
+
+      <!-- step 4 -->
+      <div class="step" data-step="4" hidden>
+        <h2>Review &amp; submit</h2>
+        <table>
+          <tr><th style="width:180px">Name</th><td>Nusrat Jahan · nusrat.jahan@example.com · 01711-000000</td></tr>
+          <tr><th>Eligibility basis</th><td id="rvBasis"></td></tr>
+          <tr><th>Academic</th><td>University of Dhaka · BSc in CSE · Undergraduate, 4th year</td></tr>
+          <tr><th>Documents</th><td id="rvDocs"></td></tr>
+        </table>
+        <label class="row" style="margin-top:14px;align-items:flex-start"><input type="checkbox" id="decl" /> <span class="small">I declare that the information and documents are true. I understand that false information cancels the application and the internship (cl.11 ঠ).</span></label>
+      </div>
+
+      <div class="row between" style="margin-top:18px">
+        <button class="btn" id="back" disabled>Back</button>
+        <span class="small muted">Already have an account? <a href="#" data-go="s-login">Sign in</a></span>
+        <button class="btn primary" id="next">Continue</button>
+      </div>
+    </div>
+
+    <aside class="side grid">
+      <div class="card">
+        <h3>Eligibility check</h3>
+        <div id="rules"></div>
+      </div>
+      <div class="card small">
+        <h3>What happens next</h3>
+        <div class="timeline">
+          <div class="done">You submit this form</div>
+          <div>UGC checks your details and documents (usually 2–3 working days)</div>
+          <div>You get an email: approved, or what to fix</div>
+          <div>Sign in and apply to an open batch</div>
+        </div>
+      </div>
+    </aside>
+  </div>
+</section>
+
+<!-- ===================== 2. SUBMITTED ===================== -->
+<section class="screen" id="s-done">
+  <div class="note"><b>নোট:</b> Submit করার পরের page। Reference number দেখায়। email যায় শুধু খবর জানাতে, এতে verification code থাকে না।</div>
+  <div class="card center">
+    <div style="font-size:40px">✓</div>
+    <h1>Registration submitted</h1>
+    <p class="muted">Reference <b>REG-2026-00418</b>. We have sent a copy to nusrat.jahan@example.com.</p>
+    <p>The UGC administrator will check your details and documents. You can sign in to see the status, but you can apply only after approval.</p>
+    <div class="row" style="justify-content:center"><button class="btn primary" data-go="s-status">See status</button><button class="btn" data-go="s-login">Go to sign in</button></div>
+  </div>
+</section>
+
+<!-- ===================== 3. LOGIN ===================== -->
+<section class="screen" id="s-login">
+  <div class="note"><b>নোট:</b> দুটি বিকল্প আছে। <b>A:</b> Pending account login করতে পারে, কিন্তু শুধু "My registration" page দেখে (সুপারিশ, কারণ document ঠিক করে আবার upload করা যায়)। <b>B:</b> Approve হওয়ার আগে login একেবারে বন্ধ (নিচের বার্তাটি)।</div>
+  <div class="card" style="max-width:420px;margin:20px auto">
+    <h1>Sign in</h1>
+    <div style="margin:12px 0"><label class="f">Email</label><input type="email" value="nusrat.jahan@example.com" /></div>
+    <div style="margin:12px 0"><label class="f">Password</label><input type="password" value="secret123" /></div>
+    <div class="badge amber" style="display:block;border-radius:8px;padding:10px;font-weight:500">
+      <b>Option B message:</b> Your registration (REG-2026-00418) is still being reviewed. You can sign in once UGC approves it.
+    </div>
+    <div class="row between" style="margin-top:14px"><a href="#" data-go="s-signup" class="small">Create an account</a><button class="btn primary">Sign in</button></div>
+  </div>
+</section>
+
+<!-- ===================== 4. MY REGISTRATION ===================== -->
+<section class="screen" id="s-status">
+  <div class="note"><b>নোট (Option A):</b> Pending user শুধু এই page দেখে। উপরের toggle দিয়ে ৪টি অবস্থা দেখুন। "Needs correction" হলে শুধু চিহ্নিত document আবার upload করা যায়।</div>
+  <div class="row between">
+    <div><h1>My registration</h1><p class="muted">Reference REG-2026-00418 · submitted 24 Nov 2026</p></div>
+    <div class="toggle" id="stToggle"><button class="on" data-st="pending">Pending</button><button data-st="fix">Needs correction</button><button data-st="rejected">Rejected</button><button data-st="approved">Approved</button></div>
+  </div>
+  <div class="card" id="stBanner" style="margin:14px 0"></div>
+  <div class="grid g2">
+    <div class="card"><h2>Documents</h2><table id="stDocs"></table></div>
+    <div class="card"><h2>History</h2><div class="timeline" id="stHist"></div></div>
+  </div>
+</section>
+
+<!-- ===================== 5. ADMIN ===================== -->
+<section class="screen" id="s-admin">
+  <div class="note"><b>নোট:</b> Users page-এ নতুন tab "Registrations"। Admin প্রতিটি document আলাদা করে Accept বা Reject করেন, তারপর account Approve করেন। Approve করলে account active হয়, <code>IdentityVerified = true</code> হয় (FR-A3), আর role হয় Student।</div>
+  <div class="row between"><div><h1>Users</h1><p class="muted">Admin-created users and self-registrations</p></div>
+    <div class="toggle"><button>All users</button><button class="on">Registrations <span class="badge amber">3</span></button></div></div>
+  <div class="grid g3" style="margin:14px 0">
+    <div class="stat"><span class="small muted">Waiting review</span><b>3</b></div>
+    <div class="stat"><span class="small muted">Needs correction</span><b>1</b></div>
+    <div class="stat"><span class="small muted">Approved this month</span><b>12</b></div>
+  </div>
+  <div class="grid" style="grid-template-columns:1.1fr 1fr;align-items:start">
+    <div class="card" style="padding:0">
+      <table>
+        <tr><th>Applicant</th><th>Basis</th><th>Docs</th><th>Submitted</th><th>Status</th></tr>
+        <tr class="sel"><td><b>Nusrat Jahan</b><br /><span class="small muted">University of Dhaka · CSE</span></td><td>(a) 4th year</td><td>5 / 5</td><td>24 Nov</td><td><span class="badge amber">Pending</span></td></tr>
+        <tr><td><b>Rafiul Islam</b><br /><span class="small muted">BUET · EEE</span></td><td>(b) Graduated Mar 2026</td><td>4 / 4</td><td>23 Nov</td><td><span class="badge amber">Pending</span></td></tr>
+        <tr><td><b>Tanjila Akter</b><br /><span class="small muted">UPM Malaysia · MBA</span></td><td>(c) Foreign</td><td>4 / 5</td><td>22 Nov</td><td><span class="badge blue">Needs correction</span></td></tr>
+        <tr><td><b>Mahin Chowdhury</b><br /><span class="small muted">JU · English</span></td><td>(a) 3rd year</td><td>4 / 5</td><td>21 Nov</td><td><span class="badge red">Not eligible</span></td></tr>
+      </table>
+    </div>
+    <div class="card">
+      <div class="row between"><h2 style="margin:0">Nusrat Jahan</h2><span class="badge amber">Pending</span></div>
+      <p class="small muted">REG-2026-00418 · nusrat.jahan@example.com · 01711-000000 · NID 1995 2xx xxx xxx</p>
+      <div class="rule"><span class="ok">✓</span> Basis (a): Undergraduate, 4th year — eligible</div>
+      <div class="rule"><span class="ok">✓</span> No other account with this email, NID or mobile</div>
+      <h3 style="margin-top:12px">Documents</h3>
+      <table id="adDocs"></table>
+      <div class="preview" style="margin-top:10px">Document preview (PDF / image opens here)</div>
+      <label class="f" style="margin-top:12px">Note to applicant (required for correction / reject)</label>
+      <textarea placeholder="e.g. Studentship certificate is older than 3 months — upload a new one."></textarea>
+      <div class="row" style="margin-top:12px;justify-content:flex-end">
+        <button class="btn danger">Reject</button><button class="btn">Ask for correction</button><button class="btn primary">Approve account</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== 6. DOCUMENTS PAGE ===================== -->
+<section class="screen" id="s-docs">
+  <div class="note"><b>নোট:</b> Internship menu-তে নতুন "Documents" page আসবে (পুরনো mock page-এর জায়গায়)। Signup-এর document এখানে আপনা থেকে দেখাবে। পরে নতুন document যোগ করা বা পুরনোটা বদলানো যায়। Verify হয়ে গেলে document lock হয়ে যায়। Apply করার সময় application form এখান থেকেই document নেবে (FR-A6)।</div>
+  <div class="row between"><div><h1>Documents</h1><p class="muted">Your documents for UGC Internship. Verified documents are locked.</p></div><button class="btn primary">Upload document</button></div>
+  <div class="grid g3" style="margin:14px 0">
+    <div class="stat"><span class="small muted">Verified</span><b>4</b></div>
+    <div class="stat"><span class="small muted">Under review</span><b>1</b></div>
+    <div class="stat"><span class="small muted">Needs replacing</span><b>0</b></div>
+  </div>
+  <div class="card" style="padding:0">
+    <table>
+      <tr><th>Document</th><th>File</th><th>Uploaded</th><th>From</th><th>Status</th><th></th></tr>
+      <tr><td><b>Studentship certificate</b></td><td>studentship_nov26.pdf · 412 KB</td><td>24 Nov 2026</td><td>Sign-up</td><td><span class="badge green">Verified</span></td><td><button class="btn sm">View</button></td></tr>
+      <tr><td><b>Latest transcript</b></td><td>transcript_3rd_year.pdf · 1.1 MB</td><td>24 Nov 2026</td><td>Sign-up</td><td><span class="badge green">Verified</span></td><td><button class="btn sm">View</button></td></tr>
+      <tr><td><b>CV</b></td><td>Nusrat_CV.pdf · 220 KB</td><td>24 Nov 2026</td><td>Sign-up</td><td><span class="badge green">Verified</span></td><td><button class="btn sm">View</button> <button class="btn sm">Replace</button></td></tr>
+      <tr><td><b>National ID</b></td><td>nid_front_back.jpg · 640 KB</td><td>24 Nov 2026</td><td>Sign-up</td><td><span class="badge green">Verified</span></td><td><button class="btn sm">View</button></td></tr>
+      <tr><td><b>Recommendation letter</b> <span class="small muted">optional</span></td><td>chair_letter.pdf · 180 KB</td><td>2 Dec 2026</td><td>Documents page</td><td><span class="badge amber">Under review</span></td><td><button class="btn sm">View</button> <button class="btn sm danger">Remove</button></td></tr>
+    </table>
+  </div>
+</section>
+</main>
+
+<script>
+const DOCS = {
+  common: [
+    { k: "photo", n: "Passport-size photo", req: true, h: "Recent, plain background. JPG or PNG." },
+    { k: "id", n: "National ID / birth registration", req: true, h: "Both sides of the NID in one file." },
+    { k: "cv", n: "CV", req: true, h: "Education, skills, any experience (FR-A6)." },
+  ],
+  enrolled: [
+    { k: "studentship", n: "Studentship certificate", req: true, h: "From the department or Registrar, issued in the last 3 months, stating year / semester." },
+    { k: "transcript", n: "Latest transcript / mark sheet", req: true, h: "Up to the last finished year or semester." },
+    { k: "studentid", n: "University ID card", req: false, h: "Optional. Helps match the student ID." },
+    { k: "rec", n: "Recommendation / NOC from the department", req: false, h: "Optional. Department head or chair." },
+  ],
+  graduate: [
+    { k: "degree", n: "Degree certificate or provisional certificate", req: true, h: "Must show the result date — within the last 12 months." },
+    { k: "transcript", n: "Final transcript / mark sheet", req: true, h: "Full degree transcript." },
+  ],
+  foreign: [
+    { k: "degree", n: "Degree certificate", req: true, h: "Issued within the last 12 months." },
+    { k: "transcript", n: "Final transcript", req: true, h: "English, or with an English translation." },
+    { k: "equiv", n: "UGC equivalence certificate", req: false, h: "If you already have it. Otherwise UGC checks equivalence during review." },
+  ],
+};
+const BASIS_TEXT = {
+  enrolled: "(a) Currently studying — 4th-year undergraduate or postgraduate",
+  graduate: "(b) Graduated in Bangladesh within the last 12 months",
+  foreign: "(c) Equivalent foreign degree within the last 12 months",
+};
+const INTRO = {
+  enrolled: "You are still studying, so we need proof of your current enrolment instead of a degree.",
+  graduate: "You have graduated, so upload your degree (or provisional) certificate showing the result date.",
+  foreign: "You hold a foreign degree. Upload the certificate and transcript; the equivalence certificate is optional.",
+};
+let step = 1, basis = "enrolled";
+const uploaded = new Set(["photo", "id", "cv", "studentship", "transcript"]);
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+
+function docsFor(b) { return [...DOCS[b], ...DOCS.common]; }
+function missing() { return docsFor(basis).filter((d) => d.req && !uploaded.has(d.k)); }
+
+function renderDocs() {
+  $("#docIntro").textContent = INTRO[basis];
+  $("#docList").innerHTML = docsFor(basis).map((d) => `
+    <div class="doc ${d.req ? "req" : "opt"}">
+      <div><b>${d.n}</b> ${d.req ? '<span class="badge green">Required</span>' : '<span class="badge">Optional</span>'}
+        <div class="hint">${d.h}</div>
+        ${uploaded.has(d.k) ? `<div class="file">📎 ${d.k}.pdf · 300 KB</div>` : ""}</div>
+      <div>${uploaded.has(d.k) ? `<button class="btn sm" data-rm="${d.k}">Remove</button>` : `<span class="drop" data-up="${d.k}">Choose file</span>`}</div>
+    </div>`).join("");
+  $$("[data-up]").forEach((x) => (x.onclick = () => { uploaded.add(x.dataset.up); renderAll(); }));
+  $$("[data-rm]").forEach((x) => (x.onclick = () => { uploaded.delete(x.dataset.rm); renderAll(); }));
+}
+
+function rules() {
+  const year = $("#year").value, level = $("#level").value, grad = $("#grad").value;
+  const months = grad ? (2026 - +grad.slice(0, 4)) * 12 + (11 - +grad.slice(5, 7)) : 99;
+  const out = [];
+  if (basis === "enrolled") {
+    const ok = level === "Postgraduate" || ["4th", "5th"].includes(year);
+    out.push([ok, ok ? `${level === "Postgraduate" ? "Postgraduate" : year + "-year undergraduate"} — meets cl.7(a)` : `${year}-year undergraduate — must be 4th year or postgraduate`]);
+  } else {
+    const ok = months <= 12;
+    out.push([ok, ok ? `Graduated ${months} month(s) ago — within 12 months` : `Graduated ${months} months ago — more than 12 months`]);
+  }
+  const miss = missing();
+  out.push([step >= 3 ? miss.length === 0 : null, miss.length ? `${miss.length} required document(s) missing` : "All required documents attached"]);
+  out.push([null, "Duplicate check (email, NID, mobile) runs on submit"]);
+  return out;
+}
+
+function renderAll() {
+  $$(".step").forEach((s) => (s.hidden = +s.dataset.step !== step));
+  $$("#steps div").forEach((d, i) => (d.className = i + 1 < step ? "done" : i + 1 === step ? "cur" : ""));
+  $$("#basis label").forEach((l) => l.classList.toggle("on", l.dataset.b === basis));
+  $$(".b-enrolled").forEach((e) => (e.hidden = basis !== "enrolled"));
+  $$(".b-graduate, .b-foreign").forEach((e) => (e.hidden = !(e.classList.contains("b-" + basis))));
+  renderDocs();
+  const r = rules();
+  $("#rules").innerHTML = r.map(([ok, t]) => `<div class="rule"><span class="${ok === null ? "wait" : ok ? "ok" : "no"}">${ok === null ? "•" : ok ? "✓" : "✗"}</span><span>${t}</span></div>`).join("");
+  $("#rvBasis").textContent = BASIS_TEXT[basis];
+  $("#rvDocs").innerHTML = docsFor(basis).filter((d) => uploaded.has(d.k)).map((d) => `<span class="badge green" style="margin:2px">${d.n}</span>`).join("");
+  $("#back").disabled = step === 1;
+  const eligible = r[0][0];
+  const next = $("#next");
+  next.textContent = step === 4 ? "Submit registration" : "Continue";
+  next.disabled = (step === 2 && !eligible) || (step === 3 && missing().length > 0) || (step === 4 && !$("#decl").checked);
+}
+
+$("#next").onclick = () => { if (step < 4) { step++; renderAll(); } else show("s-done"); };
+$("#back").onclick = () => { step--; renderAll(); };
+$$("#basis label").forEach((l) => (l.onclick = () => { basis = l.dataset.b; renderAll(); }));
+["#year", "#level", "#grad", "#decl"].forEach((s) => $(s).addEventListener("change", renderAll));
+
+/* status screen */
+const ST = {
+  pending: { b: '<span class="badge amber">Pending review</span><h2 style="margin-top:8px">UGC is checking your registration</h2><p class="muted">Nothing to do now. We will email you when it is reviewed.</p>', d: ["Under review", "Under review", "Under review", "Under review", "Under review"], h: 1 },
+  fix: { b: '<span class="badge blue">Needs correction</span><h2 style="margin-top:8px">Please replace one document</h2><p><b>Note from UGC:</b> Studentship certificate is older than 3 months — upload a new one.</p>', d: ["Rejected", "Accepted", "Accepted", "Accepted", "Accepted"], h: 2 },
+  rejected: { b: '<span class="badge red">Rejected</span><h2 style="margin-top:8px">Your registration was not approved</h2><p><b>Reason:</b> 3rd-year undergraduate — not eligible under cl.7. You may register again when eligible.</p>', d: ["Accepted", "Accepted", "Accepted", "Accepted", "Accepted"], h: 3 },
+  approved: { b: '<span class="badge green">Approved</span><h2 style="margin-top:8px">Your account is active</h2><p class="muted">You can now open My UGC Internship and apply to an open batch.</p><button class="btn primary">Go to My UGC Internship</button>', d: ["Accepted", "Accepted", "Accepted", "Accepted", "Accepted"], h: 3 },
+};
+const ST_DOCS = ["Studentship certificate", "Latest transcript", "CV", "National ID", "Photo"];
+function renderStatus(k) {
+  const s = ST[k];
+  $("#stBanner").innerHTML = s.b;
+  $("#stDocs").innerHTML = "<tr><th>Document</th><th>Status</th><th></th></tr>" + ST_DOCS.map((n, i) => {
+    const st = s.d[i], tone = st === "Accepted" ? "green" : st === "Rejected" ? "red" : "amber";
+    return `<tr><td>${n}</td><td><span class="badge ${tone}">${st}</span></td><td>${st === "Rejected" ? '<button class="btn sm primary">Upload new</button>' : '<button class="btn sm">View</button>'}</td></tr>`;
+  }).join("");
+  const hist = ["Submitted · 24 Nov 2026", k === "fix" ? "Correction asked by UGC Admin · 25 Nov" : "Under review", k === "approved" ? "Approved by UGC Admin · 26 Nov" : k === "rejected" ? "Rejected by UGC Admin · 26 Nov" : "Decision"];
+  $("#stHist").innerHTML = hist.map((t, i) => `<div class="${i < s.h ? "done" : i === s.h ? "cur" : ""}">${t}</div>`).join("");
+  $$("#stToggle button").forEach((b) => b.classList.toggle("on", b.dataset.st === k));
+}
+$$("#stToggle button").forEach((b) => (b.onclick = () => renderStatus(b.dataset.st)));
+
+$("#adDocs").innerHTML = "<tr><th>Document</th><th></th><th>Decision</th></tr>" + ["Studentship certificate", "Latest transcript", "CV", "National ID", "Photo"].map((n) =>
+  `<tr><td>${n}</td><td><button class="btn sm">View</button></td><td><button class="btn sm">✓ Accept</button> <button class="btn sm danger">✗ Reject</button></td></tr>`).join("");
+
+/* screen switch */
+function show(id) {
+  $$(".screen").forEach((s) => s.classList.toggle("on", s.id === id));
+  $$("#tabs button").forEach((b) => b.classList.toggle("on", b.dataset.s === id));
+  window.scrollTo(0, 0);
+}
+$$("#tabs button").forEach((b) => (b.onclick = () => show(b.dataset.s)));
+document.addEventListener("click", (e) => { const g = e.target.closest("[data-go]"); if (g) { e.preventDefault(); show(g.dataset.go); } });
+
+renderAll();
+renderStatus("pending");
+</script>
+</body>
+</html>
