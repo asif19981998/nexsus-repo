@@ -1,0 +1,43 @@
+# Push to main -> build on the production server (self-hosted runner) -> deploy to C:\nexsus
+name: Deploy to production
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}        # "Run workflow" button for manual redeploys
+
+concurrency:
+  group: nexsus-production
+  cancel-in-progress: false    # never kill a deploy halfway
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, windows, nexsus]
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: powershell
+    env:
+      NEXT_PUBLIC_API_URL: https://ugc-student-api.website-link.info
+      NEXT_PUBLIC_SITE_URL: https://ugc-student-portal.website-link.info
+      NEXT_TELEMETRY_DISABLED: 1
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build API (dotnet publish)
+        run: |
+          dotnet publish backend/backend/Nexus.API/Nexus.API.csproj -c Release -o "$env:RUNNER_TEMP\api" --nologo
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Build frontend (next build)
+        working-directory: nexus-main/nexus-main
+        run: |
+          npm ci --no-audit --no-fund
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          npm run build
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Deploy
+        run: |
+          .\deploy\deploy-server.ps1 -ApiBuild "$env:RUNNER_TEMP\api" -FrontendBuild "$env:GITHUB_WORKSPACE\nexus-main\nexus-main" -Commit "$env:GITHUB_SHA"
