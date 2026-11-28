@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { Badge, Button, DataTable, Drawer, ErrorState, Input, Select, StatusBadge, Textarea } from "@/components/ui";
 import { useAction, useApiQuery, useSession } from "@/hooks/useApi";
 import { useOpenDocument } from "@/hooks/useOpenDocument";
@@ -15,7 +16,9 @@ export function ApplicationsTab({ setup }) {
   const [batchId, setBatchId] = useState("all");
   const [status, setStatus] = useState("all");
   const list = useApiQuery(`/softskill/applications${qs({ batchId, status })}`);
-  const [openId, setOpenId] = useState(null);
+  // A notification link (?app=12) opens that application.
+  const linked = useSearchParams().get("app");
+  const [openId, setOpenId] = useState(linked ? Number(linked) : null);
 
   if (list.error) return <ErrorState title="Could not load applications" description={list.error.message} action={<Button onClick={list.reload}>Try again</Button>} />;
 

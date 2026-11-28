@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { AlertTriangle, Award, CalendarCheck, CheckCircle2, ClipboardList, Receipt, Wallet, XCircle } from "lucide-react";
 import {
@@ -83,6 +83,9 @@ function TabLabel({ children, count }) {
 
 export const INTERNS_LIST_HREF = "/internship/manage?tab=interns";
 
+/** The tabs of an intern's page; a link may open one with ?tab=. */
+const INTERN_TABS = ["allowance", "attendance", "report", "placement", "outcome"];
+
 function BackLink() {
   return (
     <Link href={INTERNS_LIST_HREF} className="text-sm font-medium text-nexus-700 hover:underline dark:text-nexus-300">
@@ -100,7 +103,13 @@ export function InternDetail({ id }) {
   const { data: app, error, setData, reload } = useApiQuery(`/internship/interns/${id}`);
   const mentors = useApiQuery(can(P.internTransfer) ? "/users/mentors" : null);
   const { run, busy } = useAction();
-  const [tab, setTab] = useState("allowance");
+  // Notification links open a tab (?tab=report) and can point at one allowance month (?month=2026-10).
+  const params = useSearchParams();
+  const focusMonth = params.get("month");
+  const [tab, setTab] = useState(() => (INTERN_TABS.includes(params.get("tab")) ? params.get("tab") : "allowance"));
+  useEffect(() => {
+    if (app && focusMonth) document.getElementById(`bill-${focusMonth}`)?.scrollIntoView({ block: "center", behavior: "smooth" });
+  }, [app, focusMonth]);
   const [transfer, setTransfer] = useState({
     departmentId: "",
     mentorId: "",
@@ -336,7 +345,18 @@ export function InternDetail({ id }) {
               {
                 key: "month",
                 label: "Month",
-                render: (b) => <span className="font-medium">{monthLabel(b.month)}</span>,
+                render: (b) => (
+                  <span
+                    id={`bill-${b.month}`}
+                    className={
+                      b.month === focusMonth
+                        ? "rounded-md bg-[#f7f1e6] px-2 py-1 font-medium ring-2 ring-opportunity dark:bg-nexus-800"
+                        : "font-medium"
+                    }
+                  >
+                    {monthLabel(b.month)}
+                  </span>
+                ),
               },
               {
                 key: "att",

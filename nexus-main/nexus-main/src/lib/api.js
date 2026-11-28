@@ -3,6 +3,7 @@
 import { useAuthStore } from "@/store/useAuthStore";
 
 export const API_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5080").replace(/\/$/, "");
+// export const API_URL = (process.env.NEXT_PUBLIC_API_URL || "www.ugc-student-api.website-link.info").replace(/\/$/, "");
 
 export class ApiError extends Error {
   constructor(message, status, body) {

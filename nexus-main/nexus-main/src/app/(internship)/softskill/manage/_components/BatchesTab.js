@@ -8,15 +8,97 @@ import { api } from "@/lib/api";
 import { SP } from "@/lib/softskillPermissions";
 import { Card, ErrorText, period } from "../../_components/ui";
 
-const NEXT = {
+export const NEXT = {
   Draft: { to: "Applications open", label: "Open applications" },
   "Applications open": { to: "Selection", label: "Close & start selection" },
   Selection: { to: "Running", label: "Start training" },
   Running: { to: "Completed", label: "Mark completed" },
 };
 
+/** Statuses a batch can still be edited in. The server applies the same rules. */
+export const EDITABLE = ["Draft", "Applications open", "Selection", "Running"];
+
+export const batchHref = (id) => `/softskill/manage/batches/${id}`;
+
+/**
+ * Edit a batch's own fields (mirrors SoftSkillBatchService.UpdateAsync): the application window locks once selection
+ * starts, the start date once training runs. Calls `onSaved(batchDto)` after the server accepts it.
+ */
+export function EditBatchModal({ batch, policy, onClose, onSaved }) {
+  const { run, busy } = useAction();
+  const [form, setForm] = useState({
+    name: batch.name,
+    applyFrom: batch.applyFrom || "",
+    applyTo: batch.applyTo || "",
+    startDate: batch.startDate || "",
+    note: batch.note || "",
+  });
+  const [override, setOverride] = useState(null);
+  const [reason, setReason] = useState("");
+  const [formError, setFormError] = useState("");
+  const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
+  const windowLocked = ["Selection", "Running"].includes(batch.status);
+  const startLocked = batch.status === "Running";
+
+  const submit = async () => {
+    setFormError("");
+    try {
+      const saved = await run(
+        () =>
+          api.put(`/softskill/batches/${batch.id}`, {
+            name: form.name,
+            applyFrom: form.applyFrom || null,
+            applyTo: form.applyTo || null,
+            startDate: form.startDate || null,
+            note: form.note,
+            overrideReason: override ? reason : null,
+          }),
+        "Batch updated",
+        { silentError: true },
+      );
+      if (saved) onSaved(saved);
+    } catch (e) {
+      if (e.code === "needs_override") {
+        if (override) setFormError("Enter a reason to approve the override.");
+        setOverride(e.data || [e.message]);
+      } else setFormError(e.message);
+    }
+  };
+
+  const description = startLocked
+    ? "Training is running: only the name and note can change."
+    : windowLocked
+      ? "Applications have closed: the application window can no longer change. Planned sessions and visits must stay inside the new dates."
+      : `Training lasts ${policy.durationMonths} months from the start date (cl.8). Planned sessions and visits must stay inside the new dates.`;
+
+  return (
+    <Modal open onClose={onClose} title={`Edit ${batch.name}`} description={description} size="lg">
+      <div className="space-y-4">
+        <Input label="Batch name" value={form.name} onChange={set("name")} required />
+        <div className="grid gap-4 sm:grid-cols-3">
+          <Input label="Applications open" type="date" value={form.applyFrom} onChange={set("applyFrom")} disabled={windowLocked} />
+          <Input label="Applications close" type="date" value={form.applyTo} onChange={set("applyTo")} disabled={windowLocked} />
+          <Input label="Training starts" type="date" value={form.startDate} onChange={set("startDate")} disabled={startLocked} />
+        </div>
+        <p className="text-xs text-secondary">Universities and their seats are edited from the batch&apos;s university list.</p>
+        <Textarea label="Note (optional)" value={form.note} onChange={set("note")} rows={2} />
+        <OverrideBox limits={override} reason={reason} setReason={setReason} />
+        <ErrorText>{formError}</ErrorText>
+        <div className="flex justify-end gap-2">
+          <Button variant="ghost" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button onClick={submit} disabled={busy}>
+            {override ? "Save with override" : "Save changes"}
+          </Button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
 /** A 400 "needs_override" means a cl.6 limit; the form then asks for the Commission's reason. */
-function OverrideBox({ limits, reason, setReason }) {
+export function OverrideBox({ limits, reason, setReason }) {
   const { can } = useSession();
   if (!limits) return null;
   return (
@@ -43,6 +125,7 @@ export function BatchesTab({ setup }) {
   const { data: batches, error, reload, setData } = useApiQuery("/softskill/batches");
   const { run, busy } = useAction();
   const [creating, setCreating] = useState(false);
+  const [editing, setEditing] = useState(null); // the batch being edited
   const [universityGroupEdit, setUniversityGroupEdit] = useState(null); // { batch, universityGroup?, form }
   const [coordinator, setCoordinator] = useState(null); // { universityGroup, value }
   const [override, setOverride] = useState(null);
@@ -119,8 +202,19 @@ export function BatchesTab({ setup }) {
       {(batches || []).map((b) => (
         <Card
           key={b.id}
-          title={b.name}
-          description={`${b.code} · apply ${period(b.applyFrom, b.applyTo)} · training ${period(b.startDate, b.endDate)} · ${b.taken}/${b.capacity} selected`}
+          title={
+            <Link href={batchHref(b.id)} className="text-nexus-700 hover:underline dark:text-nexus-200" title="Open batch details">
+              {b.name}
+            </Link>
+          }
+          description={
+            <>
+              {b.code} · apply {period(b.applyFrom, b.applyTo)} · training {period(b.startDate, b.endDate)} ·{" "}
+              <Link href={batchHref(b.id)} className="hover:underline" title="See the students in this batch">
+                {b.taken}/{b.capacity} selected
+              </Link>
+            </>
+          }
           aside={
             <div className="flex flex-wrap items-center gap-2">
               <StatusBadge status={b.status} />
@@ -128,6 +222,11 @@ export function BatchesTab({ setup }) {
               {manage && NEXT[b.status] ? (
                 <Button size="sm" disabled={busy} onClick={() => move(b, NEXT[b.status].to)}>
                   {NEXT[b.status].label}
+                </Button>
+              ) : null}
+              {manage && EDITABLE.includes(b.status) ? (
+                <Button size="sm" variant="outline" disabled={busy} onClick={() => setEditing(b)}>
+                  Edit
                 </Button>
               ) : null}
               {manage && ["Draft", "Applications open", "Selection"].includes(b.status) ? (
@@ -267,6 +366,19 @@ export function BatchesTab({ setup }) {
           </div>
         ) : null}
       </Modal>
+
+      {editing ? (
+        <EditBatchModal
+          key={editing.id}
+          batch={editing}
+          policy={policy}
+          onClose={() => setEditing(null)}
+          onSaved={(b) => {
+            replace(b);
+            setEditing(null);
+          }}
+        />
+      ) : null}
 
       {coordinator ? <CoordinatorModal state={coordinator} onClose={() => setCoordinator(null)} onSaved={(b) => (replace(b), setCoordinator(null))} /> : null}
     </div>

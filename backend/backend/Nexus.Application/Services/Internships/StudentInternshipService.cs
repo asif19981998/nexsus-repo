@@ -110,7 +110,7 @@ public sealed class StudentInternshipService(
         app.Documents = codes.Length <= 200 ? codes : codes[..200];
 
         await audit.LogAsync("application.submit", "InternshipApplication", app.Id, $"{me.FullName} applied to {batch.Code} with {attached.Count} documents");
-        await notify.NotifyHoldersAsync(Permissions.ApplicationScreen, "New UGC internship application", $"{me.FullName} applied to {batch.Name}.", Links.Manage);
+        await notify.NotifyHoldersAsync(Permissions.ApplicationScreen, "New UGC internship application", $"{me.FullName} applied to {batch.Name}.", Links.InternshipApplication(app.Id));
         await notify.NotifyAsync(userId, "Application received", $"Your application to {batch.Name} is submitted.", Links.Student);
         await uow.SaveChangesAsync();
 
@@ -141,7 +141,7 @@ public sealed class StudentInternshipService(
 
         it.Attendance.Add(new AttendanceRecord { Date = date, Status = AttendanceStatus.LeaveRequested, Reason = reason });
         await audit.LogAsync("leave.request", "InternshipApplication", app.Id, $"{date:yyyy-MM-dd}: {reason}");
-        await notify.NotifyHoldersAsync(Permissions.InternViewAll, "Intern leave request", $"{me.FullName} asked for leave on {date:dd MMM yyyy}.", Links.Manage, it.MentorId);
+        await notify.NotifyHoldersAsync(Permissions.InternViewAll, "Intern leave request", $"{me.FullName} asked for leave on {date:dd MMM yyyy}.", Links.Intern(app.Id, "attendance"), it.MentorId);
         await uow.SaveChangesAsync();
         return await DetailAsync(app);
     }
@@ -165,7 +165,7 @@ public sealed class StudentInternshipService(
         it.Bills.Add(new AllowanceBill { Month = month, Report = report, SubmittedAt = clock.UtcNow });
         await audit.LogAsync("bill.submit", "InternshipApplication", app.Id, month);
         await notify.NotifyHoldersAsync(Permissions.InternViewAll, "Monthly report submitted",
-            $"{me.FullName}'s report for {month} awaits evaluation.", Links.Manage, it.MentorId);
+            $"{me.FullName}'s report for {month} awaits evaluation.", Links.Intern(app.Id, "allowance", month), it.MentorId);
         await uow.SaveChangesAsync();
         return await DetailAsync(app);
     }
@@ -191,7 +191,7 @@ public sealed class StudentInternshipService(
             it.Report.Status = ReportStatus.Submitted;
         }
         await audit.LogAsync("report.submit", "InternshipApplication", app.Id, "Final report submitted");
-        await notify.NotifyHoldersAsync(Permissions.InternViewAll, "Final report submitted", $"{me.FullName}'s final report awaits review.", Links.Manage, it.MentorId);
+        await notify.NotifyHoldersAsync(Permissions.InternViewAll, "Final report submitted", $"{me.FullName}'s final report awaits review.", Links.Intern(app.Id, "report"), it.MentorId);
         await uow.SaveChangesAsync();
         return await DetailAsync(app);
     }

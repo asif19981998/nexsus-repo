@@ -57,23 +57,24 @@ function MyDocuments({ trainer }) {
   const [remove, setRemove] = useState(null); // document
 
   const byType = useMemo(() => Object.fromEntries((docs.data || []).map((d) => [d.documentTypeId, d])), [docs.data]);
-  // Document type id → what each programme says about it, e.g. "Required for UGC Internship". A row with several types
-  // (National ID, birth registration or passport) needs only one: once one is uploaded, the others become optional.
+  // Document type id → what each programme says about it, e.g. { required: true, programme: "UGC Internship" }. A row
+  // with several types (National ID, birth registration or passport) needs only one: once one is uploaded, the others
+  // become optional.
   const neededBy = useMemo(() => {
     const map = {};
     for (const m of requirements.data || [])
       for (const row of m.rows)
         for (const t of row.types) {
-          let text;
-          if (!row.required) text = `Optional for ${m.moduleName}`;
-          else if (row.types.length === 1) text = `Required for ${m.moduleName}`;
+          let entry;
+          if (!row.required) entry = { required: false };
+          else if (row.types.length === 1) entry = { required: true };
           else if (row.met)
-            text =
+            entry =
               row.document?.documentTypeId === t.id
-                ? `Required for ${m.moduleName}`
-                : `Optional for ${m.moduleName}: you uploaded ${row.document?.typeName || "another one"}`;
-          else text = `Required for ${m.moduleName}: upload any one of ${row.types.map((x) => x.name).join(", ")}`;
-          (map[t.id] ||= []).push(text);
+                ? { required: true }
+                : { required: false, note: `you uploaded ${row.document?.typeName || "another one"}` };
+          else entry = { required: true, note: `upload any one of ${row.types.map((x) => x.name).join(", ")}` };
+          (map[t.id] ||= []).push({ ...entry, programme: m.moduleName });
         }
     return map;
   }, [requirements.data]);
@@ -210,7 +211,13 @@ function DocumentRow({ type, doc, busy, neededBy, onUpload, onView, onDelete }) 
             : type.description || `${formats(type.extensions)}, up to ${fileSizeLabel(type.maxBytes)}`}
         </p>
         {doc?.status === "Rejected" && doc.reviewNote ? <p className="text-xs text-danger">Reviewer: {doc.reviewNote}</p> : null}
-        {neededBy?.length ? <p className="text-xs text-ocean dark:text-sky">{neededBy.join(" · ")}</p> : null}
+        {neededBy?.length ? (
+          <ul className="mt-1 space-y-1">
+            {neededBy.map((n) => (
+              <ProgrammeNeed key={`${n.programme}-${n.required}-${n.note || ""}`} need={n} />
+            ))}
+          </ul>
+        ) : null}
       </div>
       <div className="flex gap-2">
         {doc ? (
@@ -232,6 +239,29 @@ function DocumentRow({ type, doc, busy, neededBy, onUpload, onView, onDelete }) 
         )}
       </div>
     </div>
+  );
+}
+
+/** One programme's need for a document: a red "Required" or amber "Optional" tag, then the programme name. */
+function ProgrammeNeed({ need }) {
+  return (
+    <li className="flex flex-wrap items-center gap-1.5 text-xs">
+      <span
+        className={cn(
+          "rounded px-1.5 py-0.5 font-semibold",
+          need.required
+            ? "bg-red-50 text-danger dark:bg-red-950/50 dark:text-red-300"
+            : "bg-amber-50 text-opportunity-dark dark:bg-amber-950/40 dark:text-amber-300",
+        )}
+      >
+        {need.required ? "Required" : "Optional"}
+      </span>
+      <span className="text-secondary">for</span>
+      <span className="rounded bg-violet-50 px-1.5 py-0.5 font-semibold text-violet-700 dark:bg-violet-950/50 dark:text-violet-300">
+        {need.programme}
+      </span>
+      {need.note ? <span className="text-secondary">: {need.note}</span> : null}
+    </li>
   );
 }
 

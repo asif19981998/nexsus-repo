@@ -67,6 +67,23 @@ public sealed class CreateSoftSkillBatchRequest
     public List<long> UniversityIds { get; set; } = [];
 }
 
+/// <summary>
+/// Edit a batch's own fields (universities are managed separately). Everything while Draft or Applications open;
+/// not the application window once selection starts; only name and note once it is running. Completed and
+/// cancelled batches are read-only.
+/// </summary>
+public sealed class UpdateSoftSkillBatchRequest
+{
+    public string? Name { get; set; }
+    public DateOnly? ApplyFrom { get; set; }
+    public DateOnly? ApplyTo { get; set; }
+    public DateOnly? StartDate { get; set; }
+    public string? Note { get; set; }
+
+    /// <summary>Required when moving the batch to a year that is already at the batches-per-year limit (cl.6 গ).</summary>
+    public string? OverrideReason { get; set; }
+}
+
 public sealed class UniversityGroupRequest
 {
     public long? UniversityId { get; set; }

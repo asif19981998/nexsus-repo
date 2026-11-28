@@ -37,6 +37,15 @@ public class InternshipBatchesController(IBatchService batches) : ControllerBase
     [HasPermission(Permissions.BatchManage)]
     public async Task<ActionResult<BatchDto>> Create(CreateBatchRequest request) => Ok(await batches.CreateAsync(request));
 
+    [HttpGet("{id:long}")]
+    [HasPermission(Permissions.BatchView)]
+    public async Task<ActionResult<BatchDto>> Get(long id) => Ok(await batches.GetAsync(id));
+
+    /// <summary>Edit a batch. Same "needs_override" flow as create when the new values go over a cl.6 limit.</summary>
+    [HttpPut("{id:long}")]
+    [HasPermission(Permissions.BatchManage)]
+    public async Task<ActionResult<BatchDto>> Update(long id, UpdateBatchRequest request) => Ok(await batches.UpdateAsync(id, request));
+
     [HttpPost("{id:long}/status")]
     [HasPermission(Permissions.BatchManage)]
     public async Task<ActionResult<BatchDto>> SetStatus(long id, SetBatchStatusRequest request) => Ok(await batches.SetStatusAsync(id, request));

@@ -108,7 +108,7 @@ public sealed class TrainerService(
 
         await audit.LogAsync("softskill.trainer.apply", "SoftSkillTrainer", registration.Id, $"{me.FullName} registered as a trainer");
         await notify.NotifyHoldersAsync(Permissions.SoftSkill.TrainerReview, "New Soft Skill trainer registration",
-            $"{me.FullName} ({profile.University?.Name}) registered as a trainer.", Links.SoftSkillManage);
+            $"{me.FullName} ({profile.University?.Name}) registered as a trainer.", Links.SoftSkillTrainerRegistration(registration.Id));
         await uow.SaveChangesAsync();
         return await GetMineAsync();
     }

@@ -151,7 +151,7 @@ public sealed class ApplicationAdminService(
 
         await audit.LogAsync("intern.place", "InternshipApplication", id, $"Placed in {dept.Name} with {mentor.FullName} ({start:yyyy-MM-dd} → {end:yyyy-MM-dd})");
         await notify.NotifyAsync(app.StudentId, "Internship placement", $"You are placed in {dept.Name}, starting {start:dd MMM yyyy}. Your mentor is {mentor.FullName}.", Links.Student);
-        await notify.NotifyAsync(mentor.Id, "New intern assigned", $"{app.Student.FullName} joins {dept.Name} under your supervision from {start:dd MMM yyyy}.", Links.Manage);
+        await notify.NotifyAsync(mentor.Id, "New intern assigned", $"{app.Student.FullName} joins {dept.Name} under your supervision from {start:dd MMM yyyy}.", Links.Intern(app.Id));
         await uow.SaveChangesAsync();
 
         // Reload so the new internship's department and mentor navigations are populated.

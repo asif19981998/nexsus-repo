@@ -51,6 +51,15 @@ public class SoftSkillBatchesController(ISoftSkillBatchService batches) : Contro
     [HasPermission(P.BatchManage)]
     public async Task<ActionResult<SoftSkillBatchDto>> Create(CreateSoftSkillBatchRequest request) => Ok(await batches.CreateAsync(request));
 
+    [HttpGet("{id:long}")]
+    [HasPermission(P.BatchView)]
+    public async Task<ActionResult<SoftSkillBatchDto>> Get(long id) => Ok(await batches.GetAsync(id));
+
+    /// <summary>Edit a batch. Same "needs_override" flow as create when the new start date lands in a full year.</summary>
+    [HttpPut("{id:long}")]
+    [HasPermission(P.BatchManage)]
+    public async Task<ActionResult<SoftSkillBatchDto>> Update(long id, UpdateSoftSkillBatchRequest request) => Ok(await batches.UpdateAsync(id, request));
+
     [HttpPost("{id:long}/status")]
     [HasPermission(P.BatchManage)]
     public async Task<ActionResult<SoftSkillBatchDto>> SetStatus(long id, SetBatchStatusRequest request) => Ok(await batches.SetStatusAsync(id, request));

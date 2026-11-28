@@ -7,7 +7,12 @@ using Nexus.Domain.Entities.Common;
 
 namespace Nexus.Application.Services.Common;
 
-/// <summary>Front-end routes used as notification links.</summary>
+/// <summary>
+/// Front-end routes used as notification links. A link should land where the work is done: the right page, tab and
+/// item. The front end reads these query parameters: <c>tab</c> (which tab to open), <c>app</c> (open that
+/// application), <c>trainer</c> (open that trainer registration), <c>batch</c> (filter by batch) and <c>month</c>
+/// (highlight that allowance month).
+/// </summary>
 public static class Links
 {
     public const string Student = "/internship/programme";
@@ -18,7 +23,35 @@ public static class Links
     public const string SoftSkillManage = "/softskill/manage";
     public const string SoftSkillTrainer = "/softskill/trainer";
     public const string SoftSkillMonitoring = "/softskill/monitoring";
-    public static string SoftSkillUniversityGroup(long id) => $"/softskill/university-groups/{id}";
+
+    /// <summary>The university group page, optionally on one tab: schedule, trainees, leave, assessments, final or monitoring.</summary>
+    public static string SoftSkillUniversityGroup(long id, string? tab = null) =>
+        tab is null ? $"/softskill/university-groups/{id}" : $"/softskill/university-groups/{id}?tab={tab}";
+
+    // ---------- internship staff ----------
+
+    /// <summary>The Applications tab with that application open.</summary>
+    public static string InternshipApplication(long applicationId) => $"{Manage}?tab=applications&app={applicationId}";
+
+    /// <summary>One intern's page (by application id), optionally on a tab (allowance, attendance, report, placement, outcome) and a month.</summary>
+    public static string Intern(long applicationId, string? tab = null, string? month = null)
+    {
+        var link = $"{Manage}/interns/{applicationId}";
+        if (tab is null) return link;
+        link += $"?tab={tab}";
+        return month is null ? link : $"{link}&month={Uri.EscapeDataString(month)}";
+    }
+
+    // ---------- soft skill staff ----------
+
+    /// <summary>The Applications tab with that application open.</summary>
+    public static string SoftSkillApplication(long applicationId) => $"{SoftSkillManage}?tab=applications&app={applicationId}";
+
+    /// <summary>The Trainers tab with that registration open.</summary>
+    public static string SoftSkillTrainerRegistration(long trainerId) => $"{SoftSkillManage}?tab=trainers&trainer={trainerId}";
+
+    /// <summary>The Stipends tab filtered to one batch.</summary>
+    public static string SoftSkillStipends(long batchId) => $"{SoftSkillManage}?tab=stipends&batch={batchId}";
 }
 
 public interface IAuditService

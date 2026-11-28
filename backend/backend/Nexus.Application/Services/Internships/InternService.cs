@@ -84,7 +84,7 @@ public sealed class InternService(
         await audit.LogAsync("intern.transfer", "InternshipApplication", id, $"→ {dept.Name}: {reason}");
         await notify.NotifyAsync(app.StudentId, "Department transfer", $"UGC moved you to {dept.Name}.", Links.Student);
         if (mentorId is { } m && m != me.UserId)
-            await notify.NotifyAsync(m, "Intern assigned to you", $"{app.Student.FullName} now works in {dept.Name} under your supervision.", Links.Manage);
+            await notify.NotifyAsync(m, "Intern assigned to you", $"{app.Student.FullName} now works in {dept.Name} under your supervision.", Links.Intern(app.Id));
         await uow.SaveChangesAsync();
         return await DetailAsync(await LoadAsync(id));
     }
@@ -310,7 +310,7 @@ public sealed class InternService(
         bill.EvaluatedByName = me.FullName;
         await audit.LogAsync("bill.evaluate", "InternshipApplication", id, $"{month}: {score}/100 (attendance {r.Attendance}, conduct {r.Conduct}, discipline {r.Discipline}, work skill {r.WorkSkill}), {absent} absent day(s) (register: {view.Attendance.Unapproved} unapproved){replaced}");
         await notify.NotifyAsync(app.StudentId, "Monthly report evaluated", $"Your report for {month} scored {score}/100.", Links.Student);
-        await notify.NotifyHoldersAsync(Permissions.BillPay, "Allowance ready to pay", $"{app.Student.FullName}'s allowance for {month} is evaluated.", Links.Manage);
+        await notify.NotifyHoldersAsync(Permissions.BillPay, "Allowance ready to pay", $"{app.Student.FullName}'s allowance for {month} is evaluated.", Links.Intern(app.Id, "allowance", month));
         await uow.SaveChangesAsync();
         return await DetailAsync(app);
     }

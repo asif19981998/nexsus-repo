@@ -122,7 +122,7 @@ public sealed class StudentSoftSkillService(
 
         await audit.LogAsync("softskill.application.submit", "SoftSkillApplication", app.Id, $"{me.FullName} applied to {batch.Code} at {universityGroup.University.Name}");
         await notify.NotifyHoldersAsync(Permissions.SoftSkill.ApplicationScreen, "New Soft Skill application",
-            $"{me.FullName} ({universityGroup.University.Name}) applied to {batch.Name}.", Links.SoftSkillManage);
+            $"{me.FullName} ({universityGroup.University.Name}) applied to {batch.Name}.", Links.SoftSkillApplication(app.Id));
         await notify.NotifyAsync(userId, "Application received", $"Your application to {batch.Name} is submitted.", Links.SoftSkillStudent);
         await uow.SaveChangesAsync();
         return await DetailAsync(await MyLatestAsync());
@@ -154,7 +154,7 @@ public sealed class StudentSoftSkillService(
         trainee.Attendance.Add(new SoftSkillAttendance { SessionId = session.Id, Status = AttendanceStatus.LeaveRequested, ReasonType = type, Reason = reason });
         await audit.LogAsync("softskill.leave.request", "SoftSkillTrainee", trainee.Id, $"Session {session.Id} on {session.Date:yyyy-MM-dd}: {type}, {reason}");
         if (trainee.UniversityGroup.CoordinatorId is { } coordinator)
-            await notify.NotifyAsync(coordinator, "Soft Skill leave request", $"{me.FullName} asked for leave on {session.Date:dd MMM yyyy}.", Links.SoftSkillUniversityGroup(trainee.UniversityGroupId));
+            await notify.NotifyAsync(coordinator, "Soft Skill leave request", $"{me.FullName} asked for leave on {session.Date:dd MMM yyyy}.", Links.SoftSkillUniversityGroup(trainee.UniversityGroupId, "leave"));
         await uow.SaveChangesAsync();
         return await DetailAsync(app);
     }
@@ -190,7 +190,7 @@ public sealed class StudentSoftSkillService(
         }
         await audit.LogAsync("softskill.report.submit", "SoftSkillTrainee", trainee.Id, $"{type}: {title}");
         if (trainee.UniversityGroup.CoordinatorId is { } coordinator)
-            await notify.NotifyAsync(coordinator, "Learning report submitted", $"{me.FullName}'s {(type == LearningReportType.MiniProject ? "small project" : "learning report")} awaits review.", Links.SoftSkillUniversityGroup(trainee.UniversityGroupId));
+            await notify.NotifyAsync(coordinator, "Learning report submitted", $"{me.FullName}'s {(type == LearningReportType.MiniProject ? "small project" : "learning report")} awaits review.", Links.SoftSkillUniversityGroup(trainee.UniversityGroupId, "trainees"));
         await uow.SaveChangesAsync();
         return await DetailAsync(app);
     }

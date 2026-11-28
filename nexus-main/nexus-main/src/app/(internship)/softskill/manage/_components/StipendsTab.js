@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { Badge, Button, DataTable, ErrorState, Modal, Select, Textarea } from "@/components/ui";
 import { useAction, useApiQuery, useSession } from "@/hooks/useApi";
 import { api, qs } from "@/lib/api";
@@ -17,7 +18,9 @@ const STATUSES = ["Ready to pay", "Withheld", "Paid", "Not eligible", "Awaiting 
 export function StipendsTab({ setup }) {
   const { can } = useSession();
   const batches = useApiQuery("/softskill/batches");
-  const [batchId, setBatchId] = useState("all");
+  // A notification link (?batch=3) opens filtered to that batch.
+  const linkedBatch = useSearchParams().get("batch");
+  const [batchId, setBatchId] = useState(linkedBatch || "all");
   const [status, setStatus] = useState("Ready to pay");
   const list = useApiQuery(`/softskill/stipends${qs({ batchId, status })}`);
   const { run, busy } = useAction();

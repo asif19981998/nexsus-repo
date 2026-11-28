@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { MoreHorizontal } from "lucide-react";
 import { Badge, Button, DataTable, DropdownMenu, ErrorState, IconButton, Input, Modal, Select, Textarea } from "@/components/ui";
 import { useSetup } from "@/components/layout/InternshipShell";
@@ -18,7 +19,7 @@ const REJECTABLE = ["Submitted", "Shortlisted", "Waitlisted", "Selected"];
  * Each status as the admin reads it: a plain name, a colour, and what happens next. The API keeps its own status
  * names ("Submitted"…); only the wording here changes.
  */
-const STATUS = {
+export const STATUS = {
   Submitted: { label: "New", tone: "blue", next: "Waiting for screening" },
   Shortlisted: { label: "Shortlisted", tone: "teal", next: "Selection test next" },
   Waitlisted: { label: "On waitlist", tone: "amber", next: "Selected if a seat frees up" },
@@ -104,6 +105,20 @@ export function ApplicationsTab() {
       });
     }
   };
+
+  // A notification link (?app=12) opens that application once the list is loaded, on the stage it sits in.
+  const linkedApp = useRef(useSearchParams().get("app"));
+  useEffect(() => {
+    if (!linkedApp.current || !list.data) return;
+    const target = list.data.find((x) => String(x.id) === linkedApp.current);
+    linkedApp.current = null;
+    if (!target) return;
+    setPicked(STAGES.find((st) => st.statuses.includes(target.status))?.key || "all");
+    openModal("view", target);
+    // openModal is recreated each render; this runs once, when the list first arrives.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [list.data]);
+
   const closeModal = () => setModal(null);
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
 

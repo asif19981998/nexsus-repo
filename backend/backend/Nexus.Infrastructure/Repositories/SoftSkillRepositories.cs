@@ -52,6 +52,15 @@ public class SoftSkillBatchRepository(NexusDbContext ctx) : BaseRepository<SoftS
 
     public Task<int> CountInYearAsync(int year, bool includeCancelled) =>
         Set.CountAsync(b => b.Year == year && (includeCancelled || b.Status != BatchStatus.Cancelled));
+
+    public async Task<int> CountDatedWorkOutsideAsync(long batchId, DateOnly from, DateOnly to)
+    {
+        var sessions = await Ctx.SoftSkillSessions.CountAsync(s =>
+            s.UniversityGroup.BatchId == batchId && s.Status != SessionStatus.Cancelled && (s.Date < from || s.Date > to));
+        var visits = await Ctx.SoftSkillMonitoringVisits.CountAsync(v =>
+            v.UniversityGroup.BatchId == batchId && v.Status != VisitStatus.Cancelled && (v.PlannedOn < from || v.PlannedOn > to));
+        return sessions + visits;
+    }
 }
 
 public class SoftSkillApplicationRepository(NexusDbContext ctx) : BaseRepository<SoftSkillApplication>(ctx), ISoftSkillApplicationRepository

@@ -231,7 +231,7 @@ public sealed class SoftSkillUniversityGroupService(
         await audit.LogAsync("softskill.assessment.results", "SoftSkillUniversityGroup", c.Id, $"Assessment {a.No}: {r.Results.Count} results");
         if (r.Results.Count > 0)
             await notify.NotifyHoldersAsync(Permissions.SoftSkill.StipendPay, "Soft Skill results entered",
-                $"{c.University.Name}: assessment {a.No} results are in; stipends can be checked.", Links.SoftSkillManage);
+                $"{c.University.Name}: assessment {a.No} results are in; stipends can be checked.", Links.SoftSkillStipends(c.BatchId));
         await uow.SaveChangesAsync();
         return await DetailAsync(c, access);
     }
@@ -276,7 +276,7 @@ public sealed class SoftSkillUniversityGroupService(
         c.FinalReportById = access.UserId;
         await audit.LogAsync("softskill.university_group.final_report", "SoftSkillUniversityGroup", c.Id, $"{c.University.Name}, {c.Batch.Code}");
         await notify.NotifyHoldersAsync(Permissions.SoftSkill.CertificateIssue, "Soft Skill final report received",
-            $"{c.University.Name} sent its final evaluation report for {c.Batch.Name}.", Links.SoftSkillManage);
+            $"{c.University.Name} sent its final evaluation report for {c.Batch.Name}.", Links.SoftSkillUniversityGroup(c.Id, "final"));
         await uow.SaveChangesAsync();
         return await DetailAsync(c, access);
     }

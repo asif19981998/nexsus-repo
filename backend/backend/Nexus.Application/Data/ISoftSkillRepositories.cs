@@ -35,6 +35,9 @@ public interface ISoftSkillBatchRepository : IRepository<SoftSkillBatch>
 
     /// <summary>Batches in a year. Cancelled ones are counted only when <paramref name="includeCancelled"/> is set.</summary>
     Task<int> CountInYearAsync(int year, bool includeCancelled);
+
+    /// <summary>Sessions and monitoring visits of the batch (not cancelled) dated outside <paramref name="from"/>–<paramref name="to"/>.</summary>
+    Task<int> CountDatedWorkOutsideAsync(long batchId, DateOnly from, DateOnly to);
 }
 
 public interface ISoftSkillApplicationRepository : IRepository<SoftSkillApplication>

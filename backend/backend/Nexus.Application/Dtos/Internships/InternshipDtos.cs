@@ -48,6 +48,25 @@ public sealed class CreateBatchRequest
     public string? OverrideReason { get; set; }
 }
 
+/// <summary>
+/// Edit a batch. Which fields may change depends on its status: everything while Draft or Applications open; not the
+/// application window once selection starts; only name, note and seats once it is running. Completed and cancelled
+/// batches are read-only.
+/// </summary>
+public sealed class UpdateBatchRequest
+{
+    public string? Name { get; set; }
+    public int? Capacity { get; set; }
+    public int? DurationMonths { get; set; }
+    public DateOnly? ApplyFrom { get; set; }
+    public DateOnly? ApplyTo { get; set; }
+    public DateOnly? StartDate { get; set; }
+    public string? Note { get; set; }
+
+    /// <summary>Required when the edited batch exceeds a cl.6 limit that its current override does not already cover.</summary>
+    public string? OverrideReason { get; set; }
+}
+
 public sealed class SetBatchStatusRequest
 {
     public string? Status { get; set; }

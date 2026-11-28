@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import {
   Badge,
   Button,
@@ -37,11 +37,24 @@ const LEAVE_TONE = { Pending: "amber", Approved: "green", Rejected: "red", Atten
  * their own sessions and enters marks. The server checks every action against the university group.
  */
 export default function UniversityGroupPage() {
+  // useSearchParams needs a Suspense boundary in this Next.js version.
+  return (
+    <Suspense fallback={null}>
+      <UniversityGroup />
+    </Suspense>
+  );
+}
+
+/** The tabs of this page; a notification link may open one with ?tab=. */
+const GROUP_TABS = ["schedule", "trainees", "leave", "assessments", "final", "monitoring"];
+
+function UniversityGroup() {
   const { id } = useParams();
   const { user, can } = useSession();
   const universityGroup = useApiQuery(`/softskill/university-groups/${id}`);
   const setup = useApiQuery("/softskill/setup");
-  const [tab, setTab] = useState("schedule");
+  const linkedTab = useSearchParams().get("tab");
+  const [tab, setTab] = useState(GROUP_TABS.includes(linkedTab) ? linkedTab : "schedule");
 
   if (universityGroup.error) return <ErrorState title="Could not load the university group" description={universityGroup.error.message} action={<Button onClick={universityGroup.reload}>Try again</Button>} />;
   if (!universityGroup.data || !setup.data) return <LuxuryLoader variant="compact" label="Loading the university group" />;

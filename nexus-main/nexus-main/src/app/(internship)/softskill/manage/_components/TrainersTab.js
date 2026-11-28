@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { Badge, Button, DataTable, Drawer, ErrorState, Input, Select, Textarea } from "@/components/ui";
 import { useAction, useApiQuery } from "@/hooks/useApi";
 import { useOpenDocument } from "@/hooks/useOpenDocument";
@@ -16,7 +17,9 @@ export function TrainersTab({ setup }) {
   const [status, setStatus] = useState("Submitted");
   const [universityId, setUniversityId] = useState("all");
   const list = useApiQuery(`/softskill/trainers${qs({ status, universityId })}`);
-  const [open, setOpen] = useState(null);
+  // A notification link (?trainer=7) opens that registration.
+  const linked = useSearchParams().get("trainer");
+  const [open, setOpen] = useState(linked ? Number(linked) : null);
 
   if (list.error) return <ErrorState title="Could not load trainers" description={list.error.message} action={<Button onClick={list.reload}>Try again</Button>} />;
 

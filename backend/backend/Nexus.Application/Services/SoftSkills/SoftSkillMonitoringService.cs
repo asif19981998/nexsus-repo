@@ -79,7 +79,7 @@ public sealed class SoftSkillMonitoringService(
             $"Visit {universityGroup.University.Name} ({universityGroup.Batch.Name}) on {plannedOn:dd MMM yyyy}.", Links.SoftSkillMonitoring);
         if (universityGroup.CoordinatorId is { } coordinator)
             await notify.NotifyAsync(coordinator, "Monitoring visit planned",
-                $"{monitor.Name} will visit your university group on {plannedOn:dd MMM yyyy} (cl.14 ঘ).", Links.SoftSkillUniversityGroup(universityGroup.Id));
+                $"{monitor.Name} will visit your university group on {plannedOn:dd MMM yyyy} (cl.14 ঘ).", Links.SoftSkillUniversityGroup(universityGroup.Id, "monitoring"));
         await uow.SaveChangesAsync();
         return SoftSkillMapper.Visit((await uow.SoftSkillVisits.GetDetailAsync(visit.Id))!);
     }
@@ -120,9 +120,9 @@ public sealed class SoftSkillMonitoringService(
 
         await audit.LogAsync("softskill.visit.report", "SoftSkillUniversityGroup", v.UniversityGroupId, $"Visit {v.Id}: average {v.AverageRating}");
         await notify.NotifyHoldersAsync(Permissions.SoftSkill.MonitoringManage, "Monitoring report filed",
-            $"{v.Monitor.FullName} reported on {v.UniversityGroup.University.Name}: average {v.AverageRating}/5.", Links.SoftSkillManage);
+            $"{v.Monitor.FullName} reported on {v.UniversityGroup.University.Name}: average {v.AverageRating}/5.", Links.SoftSkillUniversityGroup(v.UniversityGroupId, "monitoring"));
         if (v.UniversityGroup.CoordinatorId is { } coordinator)
-            await notify.NotifyAsync(coordinator, "Monitoring report on your university group", "Read the findings and recommendations in the university group's Monitoring tab.", Links.SoftSkillUniversityGroup(v.UniversityGroupId));
+            await notify.NotifyAsync(coordinator, "Monitoring report on your university group", "Read the findings and recommendations in the university group's Monitoring tab.", Links.SoftSkillUniversityGroup(v.UniversityGroupId, "monitoring"));
         await uow.SaveChangesAsync();
         return SoftSkillMapper.Visit(v);
     }
