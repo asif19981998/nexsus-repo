@@ -78,8 +78,11 @@ public sealed class AuditService(IUnitOfWork uow, ICurrentUserService me, IClock
 
 public interface INotificationService
 {
-    /// <summary>Queues a notification; saved with the caller's next SaveChanges.</summary>
-    Task NotifyAsync(long userId, string title, string? body, string? link);
+    /// <summary>
+    /// Queues a notification; saved with the caller's next SaveChanges. <paramref name="email"/>: also email it.
+    /// Keep email for outcomes the person must know about or act on; everything else stays in-app.
+    /// </summary>
+    Task NotifyAsync(long userId, string title, string? body, string? link, bool email = false);
 
     /// <summary>Queues a notification for every active user whose role holds the permission.</summary>
     Task NotifyHoldersAsync(string permission, string title, string? body, string? link, long? alsoUserId = null);
@@ -89,10 +92,11 @@ public interface INotificationService
     Task MarkAllReadAsync();
 }
 
-public sealed class NotificationService(IUnitOfWork uow, ICurrentUserService me, IClock clock) : INotificationService
+public sealed class NotificationService(IUnitOfWork uow, ICurrentUserService me, IClock clock, IEmailService emails) : INotificationService
 {
-    public Task NotifyAsync(long userId, string title, string? body, string? link) =>
-        uow.Notifications.AddAsync(new Notification
+    public async Task NotifyAsync(long userId, string title, string? body, string? link, bool email = false)
+    {
+        await uow.Notifications.AddAsync(new Notification
         {
             UserId = userId,
             Title = title,
@@ -100,6 +104,8 @@ public sealed class NotificationService(IUnitOfWork uow, ICurrentUserService me,
             Link = link,
             CreatedAt = clock.UtcNow,
         });
+        if (email) await emails.QueueToUserAsync(userId, title, body, link);
+    }
 
     public async Task NotifyHoldersAsync(string permission, string title, string? body, string? link, long? alsoUserId = null)
     {

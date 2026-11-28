@@ -2,14 +2,13 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { AuthCard } from "@/components/auth/AuthCard";
 import { Button, Input } from "@/components/ui";
+import { api } from "@/lib/api";
 import { email as validateEmail } from "@/lib/validators";
 
 export default function ForgotPasswordPage() {
-  const router = useRouter();
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -22,13 +21,14 @@ export default function ForgotPasswordPage() {
     if (err) return;
 
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 800));
-    sessionStorage.setItem("nexus-reset-email", email);
-    setSent(true);
-    toast.success("Reset link sent", {
-      description: "In this demo, continue to reset your password on the next screen.",
-    });
-    setLoading(false);
+    try {
+      await api.forgotPassword(email.trim());
+      setSent(true);
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (sent) {
@@ -38,11 +38,13 @@ export default function ForgotPasswordPage() {
         subtitle={`If an account exists for ${email}, you'll receive password reset instructions shortly.`}
       >
         <p className="text-sm text-secondary">
-          Didn&apos;t receive it? Check spam or try again with your institutional email (e.g. @buet.ac.bd,
-          @du.ac.bd).
+          The link works for 30 minutes. Didn&apos;t receive it? Check your spam folder, or try again with the email
+          you use to sign in.
         </p>
         <div className="mt-6 flex flex-col gap-3">
-          <Button onClick={() => router.push("/reset-password")}>Continue to reset password (demo)</Button>
+          <Button variant="secondary" onClick={() => setSent(false)}>
+            Try another email
+          </Button>
           <Link href="/login">
             <Button variant="ghost" className="w-full">
               Back to sign in

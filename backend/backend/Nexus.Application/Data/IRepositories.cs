@@ -65,6 +65,9 @@ public interface IUserRepository
     Task<string?> GetRoleNameAsync(long userId);
     Task<List<Role>> ListRolesAsync();
 
+    /// <summary>Email address and name of an active user, for sending email. Null when the user is missing, inactive or has no email.</summary>
+    Task<(string Email, string FullName)?> GetContactAsync(long userId);
+
     /// <summary>Active users whose role holds the permission. Used to address notifications.</summary>
     Task<List<long>> ListIdsWithPermissionAsync(string permission);
 
@@ -129,6 +132,7 @@ public interface IUnitOfWork
     IPermissionRepository Permissions { get; }
     INotificationRepository Notifications { get; }
     IRepository<AuditLog> AuditLogs { get; }
+    IRepository<EmailMessage> Emails { get; }
     IRepository<StudentProfile> StudentProfiles { get; }
     IRepository<Education> Educations { get; }
     IRepository<Holiday> Holidays { get; }

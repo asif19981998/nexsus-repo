@@ -29,7 +29,7 @@ public interface IUserService
 /// what each role may do lives in the RolePermission table.
 /// </summary>
 public sealed class UserService(
-    UserManager<User> userManager, IUnitOfWork uow, ICurrentUserService me, IClock clock, IAuditService audit) : IUserService
+    UserManager<User> userManager, IUnitOfWork uow, ICurrentUserService me, IClock clock, IAuditService audit, IEmailService emails) : IUserService
 {
     public async Task<List<UserListItemDto>> ListAsync(string? role, string? search, bool toReviewOnly = false)
     {
@@ -86,6 +86,7 @@ public sealed class UserService(
         }
 
         await audit.LogAsync("user.create", "User", user.Id, $"{email} as {role}");
+        await QueueWelcomeEmailAsync(user, role, r.Password);
         await uow.SaveChangesAsync();
         return await GetAsync(user.Id);
     }
@@ -166,6 +167,23 @@ public sealed class UserService(
     }
 
     // ---------- helpers ----------
+
+    /// <summary>Sign-in details for an account the administrator made. Sensitive: the body is removed once it is sent.</summary>
+    private Task QueueWelcomeEmailAsync(User user, string role, string password)
+    {
+        static string E(string? s) => System.Net.WebUtility.HtmlEncode(s ?? "");
+        var details = $"""
+            <table style="margin:8px 0 16px;border-collapse:collapse">
+              <tr><td style="padding:4px 12px 4px 0;color:#64748b">Role</td><td style="padding:4px 0"><b>{E(role)}</b></td></tr>
+              <tr><td style="padding:4px 12px 4px 0;color:#64748b">Email</td><td style="padding:4px 0"><b>{E(user.Email)}</b></td></tr>
+              <tr><td style="padding:4px 12px 4px 0;color:#64748b">Password</td><td style="padding:4px 0"><b>{E(password)}</b></td></tr>
+            </table>
+            """;
+        var body = emails.Render(user.FullName, "Your Nexus account is ready",
+            "UGC created an account for you on Nexus. Sign in with the details below. To choose your own password, use \"Forgot password\" on the sign-in page.",
+            emails.AppUrl("/login"), "Sign in", details);
+        return emails.QueueAsync(user.Email!, user.FullName, user.Id, "Your Nexus account is ready", body, sensitive: true);
+    }
 
     private async Task ValidateRoleFieldsAsync(string? role, long? departmentId, StudentProfileRequest? student)
     {

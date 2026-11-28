@@ -15,6 +15,7 @@ public class UnitOfWork(
     IPermissionRepository permissions,
     INotificationRepository notifications,
     IRepository<AuditLog> auditLogs,
+    IRepository<EmailMessage> emails,
     IRepository<StudentProfile> studentProfiles,
     IRepository<Education> educations,
     IRepository<Holiday> holidays,
@@ -39,6 +40,7 @@ public class UnitOfWork(
     public IPermissionRepository Permissions => permissions;
     public INotificationRepository Notifications => notifications;
     public IRepository<AuditLog> AuditLogs => auditLogs;
+    public IRepository<EmailMessage> Emails => emails;
     public IRepository<StudentProfile> StudentProfiles => studentProfiles;
     public IRepository<Education> Educations => educations;
     public IRepository<Holiday> Holidays => holidays;

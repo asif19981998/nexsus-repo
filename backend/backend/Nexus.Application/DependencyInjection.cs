@@ -18,6 +18,7 @@ public static class DependencyInjection
         services.AddScoped<IPermissionService, PermissionService>();
 
         services.AddScoped<IAuditService, AuditService>();
+        services.AddScoped<IEmailService, EmailService>();
         services.AddScoped<INotificationService, NotificationService>();
 
         services.AddScoped<IAuthService, AuthService>();

@@ -63,7 +63,7 @@ var origins = builder.Configuration.GetSection("Cors:Origins").Get<string[]>() ?
 builder.Services.AddCors(options =>
     options.AddPolicy("Frontend", policy => policy.WithOrigins(origins).AllowAnyHeader().AllowAnyMethod()));
 
-// ---------- rate limits: anonymous sign-up, per client IP ----------
+// ---------- rate limits: anonymous sign-up and password reset, per client IP ----------
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
@@ -74,12 +74,15 @@ builder.Services.AddRateLimiter(options =>
         {
             title = "TooManyRequests",
             status = StatusCodes.Status429TooManyRequests,
-            detail = "Too many sign-up attempts from this network. Try again in a few minutes.",
+            detail = "Too many attempts from this network. Try again in a few minutes.",
         }, ct));
     };
     options.AddPolicy(AuthController.RegisterLimit, http => RateLimitPartition.GetFixedWindowLimiter(
         http.Connection.RemoteIpAddress?.ToString() ?? "unknown",
         _ => new FixedWindowRateLimiterOptions { PermitLimit = 5, Window = TimeSpan.FromMinutes(10), QueueLimit = 0 }));
+    options.AddPolicy(AuthController.PasswordResetLimit, http => RateLimitPartition.GetFixedWindowLimiter(
+        http.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+        _ => new FixedWindowRateLimiterOptions { PermitLimit = 10, Window = TimeSpan.FromMinutes(15), QueueLimit = 0 }));
 });
 
 builder.Services.AddControllers();

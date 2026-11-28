@@ -1,16 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { AuthCard } from "@/components/auth/AuthCard";
 import { Button, Input } from "@/components/ui";
+import { api } from "@/lib/api";
 import { password as validatePassword } from "@/lib/validators";
-import { DEMO_PASSWORD } from "@/lib/constants";
 
 export default function ResetPasswordPage() {
+  return (
+    <Suspense>
+      <ResetPasswordForm />
+    </Suspense>
+  );
+}
+
+function ResetPasswordForm() {
   const router = useRouter();
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -18,8 +26,11 @@ export default function ResetPasswordPage() {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
 
-  const resetEmail =
-    typeof window !== "undefined" ? sessionStorage.getItem("nexus-reset-email") : null;
+  // The emailed link carries ?email=...&token=...
+  const params = useSearchParams();
+  const link = { email: params.get("email") || "", token: params.get("token") || "" };
+  const resetEmail = link.email;
+  const linkMissing = !link.email || !link.token;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -31,14 +42,26 @@ export default function ResetPasswordPage() {
     if (Object.values(nextErrors).some(Boolean)) return;
 
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 700));
-    sessionStorage.removeItem("nexus-reset-email");
-    toast.success("Password updated", {
-      description: "Demo accounts always use demo123 — sign in with your email.",
-    });
-    router.push("/login");
-    setLoading(false);
+    try {
+      await api.resetPassword({ email: link.email, token: link.token, newPassword: password, confirmPassword: confirm });
+      toast.success("Password updated", { description: "Sign in with your new password." });
+      router.push("/login");
+    } catch (err) {
+      setErrors({ form: err.message });
+    } finally {
+      setLoading(false);
+    }
   };
+
+  if (linkMissing) {
+    return (
+      <AuthCard title="Reset link needed" subtitle="Open this page from the link in your password-reset email.">
+        <Link href="/forgot-password">
+          <Button className="w-full">Send me a reset link</Button>
+        </Link>
+      </AuthCard>
+    );
+  }
 
   return (
     <AuthCard
@@ -48,7 +71,6 @@ export default function ResetPasswordPage() {
           ? `Create a new password for ${resetEmail}.`
           : "Enter a new password for your account."
       }
-      badge="Demo: password resets are simulated"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="relative">
@@ -61,7 +83,6 @@ export default function ResetPasswordPage() {
             onChange={(e) => setPassword(e.target.value)}
             error={errors.password}
             required
-            hint={`Demo accounts use ${DEMO_PASSWORD}`}
           />
           <button
             type="button"
@@ -81,6 +102,14 @@ export default function ResetPasswordPage() {
           error={errors.confirm}
           required
         />
+        {errors.form && (
+          <p className="text-sm text-red-600">
+            {errors.form}{" "}
+            <Link href="/forgot-password" className="font-medium underline">
+              Get a new link
+            </Link>
+          </p>
+        )}
         <Button type="submit" className="w-full" loading={loading}>
           Update password
         </Button>

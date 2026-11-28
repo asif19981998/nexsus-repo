@@ -80,6 +80,8 @@ export const api = {
   download,
   login: (email, password) => request("POST", "/auth/login", { email, password }, { auth: false }),
   register: (body) => request("POST", "/auth/register", body, { auth: false }),
+  forgotPassword: (email) => request("POST", "/auth/forgot-password", { email }, { auth: false }),
+  resetPassword: (body) => request("POST", "/auth/reset-password", body, { auth: false }),
 };
 
 /** Builds "?a=1&b=2", skipping empty values and "all". */

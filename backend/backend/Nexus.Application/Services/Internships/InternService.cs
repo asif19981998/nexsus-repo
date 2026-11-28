@@ -219,7 +219,7 @@ public sealed class InternService(
         report.ReviewedAt = clock.UtcNow;
         await audit.LogAsync(r.Accept ? "report.accept" : "report.revise", "InternshipApplication", id, note);
         await notify.NotifyAsync(app.StudentId, r.Accept ? "Report accepted" : "Report needs revision",
-            r.Accept ? "Your final report was accepted." : note, Links.Student);
+            r.Accept ? "Your final report was accepted." : note, Links.Student, email: !r.Accept);
         await uow.SaveChangesAsync();
         return await DetailAsync(app);
     }
@@ -346,7 +346,7 @@ public sealed class InternService(
             it.CertificateIssuedAt = clock.UtcNow;
             workflow.SetStatus(app, ApplicationStatus.Certified, $"Grade: {outcome.Grade}");
             await audit.LogAsync("certificate.issue", "InternshipApplication", id, $"{it.CertificateNumber} — {outcome.Grade}");
-            await notify.NotifyAsync(app.StudentId, "Certificate issued", $"Your UGC internship certificate ({outcome.Grade}) is ready.", Links.Student);
+            await notify.NotifyAsync(app.StudentId, "Certificate issued", $"Your UGC internship certificate ({outcome.Grade}) is ready.", Links.Student, email: true);
             result = new IssueOutcomeResult(true, outcome.Grade, []);
         }
         else
@@ -355,7 +355,7 @@ public sealed class InternService(
             it.OutcomeReasons = string.Join('\n', outcome.Reasons);
             workflow.SetStatus(app, ApplicationStatus.NotCertified, string.Join(' ', outcome.Reasons));
             await audit.LogAsync("certificate.deny", "InternshipApplication", id, string.Join(' ', outcome.Reasons));
-            await notify.NotifyAsync(app.StudentId, "Internship outcome", "The required standard was not met, so no certificate is issued.", Links.Student);
+            await notify.NotifyAsync(app.StudentId, "Internship outcome", "The required standard was not met, so no certificate is issued.", Links.Student, email: true);
             result = new IssueOutcomeResult(false, null, outcome.Reasons);
         }
 
@@ -373,7 +373,10 @@ public sealed class InternService(
         app.Internship.OutcomeReasons = reason;
         workflow.SetStatus(app, ApplicationStatus.Terminated, reason);
         await audit.LogAsync("intern.terminate", "InternshipApplication", id, reason);
-        await notify.NotifyAsync(app.StudentId, "Internship terminated", reason, Links.Student);
+        await notify.NotifyAsync(app.StudentId, "Internship terminated", reason, Links.Student, email: true);
+        if (app.Internship.MentorId is { } mentorId)
+            await notify.NotifyAsync(mentorId, "Intern's internship terminated",
+                $"UGC terminated {app.Student.FullName}'s internship. Reason: {reason}", Links.Intern(app.Id), email: true);
         await uow.SaveChangesAsync();
         return await DetailAsync(app);
     }

@@ -76,6 +76,15 @@ public class UserRepository(NexusDbContext ctx) : IUserRepository
          where rp.Permission.Code == permission && u.IsActive
          select u.Id).Distinct().ToListAsync();
 
+    public async Task<(string Email, string FullName)?> GetContactAsync(long userId)
+    {
+        var u = await ctx.Users.AsNoTracking()
+            .Where(x => x.Id == userId && x.IsActive && x.Email != null)
+            .Select(x => new { x.Email, x.FullName })
+            .FirstOrDefaultAsync();
+        return u is null ? null : (u.Email!, u.FullName);
+    }
+
     public Task<bool> PhoneExistsAsync(string phone) => ctx.Users.AnyAsync(u => u.PhoneNumber == phone);
 
     public async Task<(StudentProfile? Profile, Education? Main)> GetAcademicAsync(long userId)

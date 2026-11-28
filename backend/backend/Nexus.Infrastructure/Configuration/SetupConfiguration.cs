@@ -96,3 +96,18 @@ public class UniversityConfiguration : IEntityTypeConfiguration<University>
         b.Property(u => u.ShortName).HasMaxLength(University.MaxShortNameLength);
     }
 }
+
+public class EmailMessageConfiguration : IEntityTypeConfiguration<EmailMessage>
+{
+    public void Configure(EntityTypeBuilder<EmailMessage> b)
+    {
+        b.ToTable("EmailMessages");
+        b.Property(e => e.ToAddress).HasMaxLength(256).IsRequired();
+        b.Property(e => e.ToName).HasMaxLength(150);
+        b.Property(e => e.Subject).HasMaxLength(200).IsRequired();
+        b.Property(e => e.LastError).HasMaxLength(1000);
+        // The worker's query: unsent, not given up, due.
+        b.HasIndex(e => new { e.SentAt, e.Failed, e.NextAttemptAt });
+        b.HasOne<User>().WithMany().HasForeignKey(e => e.UserId).OnDelete(DeleteBehavior.SetNull);
+    }
+}

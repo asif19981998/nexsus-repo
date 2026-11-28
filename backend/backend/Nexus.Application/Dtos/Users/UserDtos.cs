@@ -138,3 +138,18 @@ public sealed class EducationRequest
     /// <summary>Make this the line cl.7 reads. Only a bachelor's degree or higher.</summary>
     public bool IsMain { get; set; }
 }
+
+/// <summary>Public "forgot password" form.</summary>
+public sealed class ForgotPasswordRequest
+{
+    public string? Email { get; set; }
+}
+
+/// <summary>The reset-password page, opened from the emailed link.</summary>
+public sealed class CompletePasswordResetRequest
+{
+    public string? Email { get; set; }
+    public string? Token { get; set; }
+    public string? NewPassword { get; set; }
+    public string? ConfirmPassword { get; set; }
+}

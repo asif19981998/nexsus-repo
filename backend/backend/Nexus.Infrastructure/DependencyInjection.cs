@@ -4,8 +4,10 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Nexus.Application.Data;
 using Nexus.Application.Security;
+using Nexus.Application.Services.Common;
 using Nexus.Application.Services.Users;
 using Nexus.Domain.Entities.Identity;
+using Nexus.Infrastructure.Email;
 using Nexus.Infrastructure.Identity;
 using Nexus.Infrastructure.Persistence;
 using Nexus.Infrastructure.Repositories;
@@ -41,6 +43,14 @@ public static class DependencyInjection
             .AddRoles<Role>()
             .AddEntityFrameworkStores<NexusDbContext>()
             .AddDefaultTokenProviders();
+
+        // Password-reset links (emailed by "Forgot password") stop working after 30 minutes.
+        services.Configure<DataProtectionTokenProviderOptions>(o => o.TokenLifespan = TimeSpan.FromMinutes(30));
+
+        // Email: queued in the EmailMessages table, sent in the background over SMTP.
+        services.Configure<EmailOptions>(configuration.GetSection(EmailOptions.Section));
+        services.AddSingleton<IEmailSender, SmtpEmailSender>();
+        services.AddHostedService<EmailOutboxWorker>();
 
         services.Configure<JwtOptions>(configuration.GetSection(JwtOptions.Section));
         services.AddScoped<ITokenService, JwtTokenService>();

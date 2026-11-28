@@ -63,6 +63,7 @@ public class NexusDbContext(DbContextOptions<NexusDbContext> options) : Identity
 
     public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+    public DbSet<EmailMessage> EmailMessages => Set<EmailMessage>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

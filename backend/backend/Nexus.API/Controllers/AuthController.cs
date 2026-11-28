@@ -14,6 +14,9 @@ public class AuthController(IAuthService auth) : ControllerBase
     /// <summary>Rate-limit policy for the anonymous sign-up endpoint (per client IP).</summary>
     public const string RegisterLimit = "register";
 
+    /// <summary>Rate-limit policy for the anonymous password-reset endpoints (per client IP).</summary>
+    public const string PasswordResetLimit = "password-reset";
+
     /// <summary>Email + password → JWT, plus the user's role and permissions.</summary>
     [AllowAnonymous]
     [HttpPost("login")]
@@ -24,6 +27,26 @@ public class AuthController(IAuthService auth) : ControllerBase
     [EnableRateLimiting(RegisterLimit)]
     [HttpPost("register")]
     public async Task<ActionResult<LoginResponse>> Register(RegisterRequest request) => Ok(await auth.RegisterAsync(request));
+
+    /// <summary>Emails a reset link if an active account has this email. Always 204, so it does not reveal who is registered.</summary>
+    [AllowAnonymous]
+    [EnableRateLimiting(PasswordResetLimit)]
+    [HttpPost("forgot-password")]
+    public async Task<IActionResult> ForgotPassword(ForgotPasswordRequest request)
+    {
+        await auth.ForgotPasswordAsync(request);
+        return NoContent();
+    }
+
+    /// <summary>Sets a new password with the token from the emailed link.</summary>
+    [AllowAnonymous]
+    [EnableRateLimiting(PasswordResetLimit)]
+    [HttpPost("reset-password")]
+    public async Task<IActionResult> ResetPassword(CompletePasswordResetRequest request)
+    {
+        await auth.CompletePasswordResetAsync(request);
+        return NoContent();
+    }
 
     /// <summary>The signed-in user with permissions read fresh from the database.</summary>
     [HttpGet("me")]

@@ -27,11 +27,17 @@ public interface IAuthService
 
     /// <summary>Creates a Student account from the public sign-up form and signs it in.</summary>
     Task<LoginResponse> RegisterAsync(RegisterRequest request);
+
+    /// <summary>Emails a password-reset link when an active account has this email. Says nothing about whether one does.</summary>
+    Task ForgotPasswordAsync(ForgotPasswordRequest request);
+
+    /// <summary>Sets a new password from the emailed link.</summary>
+    Task CompletePasswordResetAsync(CompletePasswordResetRequest request);
 }
 
 public sealed partial class AuthService(
     UserManager<User> users, IUnitOfWork uow, ITokenService tokens, IPermissionService permissions, ICurrentUserService me,
-    IClock clock, IAuditService audit) : IAuthService
+    IClock clock, IAuditService audit, IEmailService emails) : IAuthService
 {
     private const string Invalid = "Invalid email or password.";
     private const int MaxNameLength = 150;
@@ -101,6 +107,46 @@ public sealed partial class AuthService(
 
     [GeneratedRegex(@"^01[3-9]\d{8}$")]
     private static partial Regex BdMobile();
+
+    public async Task ForgotPasswordAsync(ForgotPasswordRequest r)
+    {
+        var email = r.Email?.Trim();
+        if (string.IsNullOrEmpty(email)) throw new BadRequestException("Enter your email address.");
+        var user = await users.FindByEmailAsync(email);
+        // Same answer whether or not the account exists, so the form cannot be used to find out who is registered.
+        if (user is null || !user.IsActive || string.IsNullOrEmpty(user.Email)) return;
+
+        var token = await users.GeneratePasswordResetTokenAsync(user);
+        var link = emails.AppUrl($"/reset-password?email={Uri.EscapeDataString(user.Email)}&token={Uri.EscapeDataString(token)}");
+        var body = emails.Render(user.FullName, "Reset your Nexus password",
+            "We received a request to reset your password. The link below works for 30 minutes and only once.\nIf you did not ask for this, ignore this email; your password stays the same.",
+            link, "Set a new password");
+        await emails.QueueAsync(user.Email, user.FullName, user.Id, "Reset your Nexus password", body, sensitive: true);
+        await audit.LogAsync("user.forgot_password", "User", user.Id, user.Email);
+        await uow.SaveChangesAsync();
+    }
+
+    public async Task CompletePasswordResetAsync(CompletePasswordResetRequest r)
+    {
+        const string BadLink = "This reset link is invalid or has expired. Ask for a new one.";
+        if (string.IsNullOrWhiteSpace(r.Email) || string.IsNullOrWhiteSpace(r.Token)) throw new BadRequestException(BadLink);
+        if (string.IsNullOrEmpty(r.NewPassword)) throw new BadRequestException("Choose a new password.");
+        if (r.NewPassword != r.ConfirmPassword) throw new BadRequestException("The two passwords do not match.");
+
+        var user = await users.FindByEmailAsync(r.Email.Trim());
+        if (user is null || !user.IsActive) throw new BadRequestException(BadLink);
+        var result = await users.ResetPasswordAsync(user, r.Token, r.NewPassword);
+        if (!result.Succeeded)
+        {
+            if (result.Errors.Any(e => e.Code == nameof(IdentityErrorDescriber.InvalidToken))) throw new BadRequestException(BadLink);
+            throw new BadRequestException(string.Join(" ", result.Errors.Select(e => e.Description)));
+        }
+        // A successful reset also lifts a lockout from earlier failed sign-ins.
+        await users.SetLockoutEndDateAsync(user, null);
+        await users.ResetAccessFailedCountAsync(user);
+        await audit.LogAsync("user.reset_password_self", "User", user.Id, user.Email);
+        await uow.SaveChangesAsync();
+    }
 
     public async Task<LoginResponse> LoginAsync(LoginRequest r)
     {

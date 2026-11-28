@@ -178,7 +178,7 @@ public sealed class DocumentService(
         var (doc, type) = await ForReviewAsync(documentId);
         Review(doc, DocumentStatus.Rejected, reason);
         await audit.LogAsync("document.reject", "UserDocument", doc.Id, $"{type.Code} v{doc.Version} of user {doc.UserId}: {reason}");
-        await notify.NotifyAsync(doc.UserId, $"{type.Name} needs a new file", reason, Links.MyDocuments);
+        await notify.NotifyAsync(doc.UserId, $"{type.Name} needs a new file", reason, Links.MyDocuments, email: true);
         await uow.SaveChangesAsync();
         doc.DocumentType = type;
         return ToDto(doc);
